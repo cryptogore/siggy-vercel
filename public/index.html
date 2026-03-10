@@ -121,6 +121,25 @@ border:1px solid #22c55e;
 box-shadow:0 0 10px rgba(34,197,94,0.4);
 }
 
+/* custom scrollbar */
+
+::-webkit-scrollbar{
+width:6px;
+}
+
+::-webkit-scrollbar-track{
+background:transparent;
+}
+
+::-webkit-scrollbar-thumb{
+background:rgba(255,255,255,0.15);
+border-radius:10px;
+}
+
+::-webkit-scrollbar-thumb:hover{
+background:rgba(255,255,255,0.25);
+}
+  
 /* AI bubble */
 
 .bot .bubble{
@@ -267,5 +286,6 @@ sendMessage()
 </script>
 
 </body>
+
 
 </html>
