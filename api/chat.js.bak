@@ -1,0 +1,67 @@
+import axios from "axios"
+import fs from "fs"
+import path from "path"
+
+const persona = fs.readFileSync(path.join(process.cwd(),"siggy_prompt.txt"),"utf8")
+const docs = fs.readFileSync(path.join(process.cwd(),"ritual_docs_full.txt"),"utf8")
+const dataset = fs.readFileSync(path.join(process.cwd(),"dataset_qa.txt"),"utf8")
+
+export default async function handler(req,res){
+
+if(req.method !== "POST"){
+return res.status(405).json({error:"Method not allowed"})
+}
+
+try{
+
+const {message} = req.body
+
+const prompt = `
+
+${persona}
+
+Knowledge:
+
+${docs}
+
+Examples:
+
+${dataset}
+
+User: ${message}
+Siggy:
+`
+
+const response = await axios.post(
+"https://dashscope-intl.aliyuncs.com/api/v1/services/aigc/text-generation/generation",
+{
+model:"qwen-plus",
+input:{
+prompt
+}
+},
+{
+headers:{
+Authorization:`Bearer ${process.env.DASHSCOPE_API_KEY}`,
+"Content-Type":"application/json"
+}
+}
+)
+
+const reply = response.data?.output?.text || "Hmm... something went wrong."
+
+res.status(200).json({
+response:reply
+})
+
+}catch(err){
+
+console.log(err.response?.data || err.message)
+
+res.status(500).json({
+response:"Siggy couldn't respond right now."
+})
+
+}
+
+}
