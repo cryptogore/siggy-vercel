@@ -80,6 +80,35 @@ height:34px;
 border-radius:50%;
 }
 
+.bg{
+position:fixed;
+top:-50%;
+left:-50%;
+width:200%;
+height:200%;
+
+background-image:url("./ritual-symbol.png");
+background-size:120px;
+background-repeat:repeat;
+
+opacity:0.05;
+
+pointer-events:none;
+
+animation:bgMove 120s linear infinite;
+}
+@keyframes bgMove{
+
+0%{
+transform:translate(0px,0px);
+}
+
+100%{
+transform:translate(-120px,-120px);
+}
+
+}
+  
 .bubble{
 max-width:65%;
 padding:12px;
