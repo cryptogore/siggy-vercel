@@ -7,8 +7,6 @@
 
 <title>Siggy Dormitory</title>
 
-<link rel="icon" href="./ritual-symbol.png">
-
 <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
 
 <style>
@@ -23,30 +21,10 @@ display:flex;
 overflow:hidden;
 }
 
-/* background */
-
-.bg{
-position:fixed;
-top:-50%;
-left:-50%;
-width:200%;
-height:200%;
-background-image:url("./ritual-symbol.png");
-background-size:120px;
-opacity:0.05;
-animation:bgMove 60s linear infinite;
-pointer-events:none;
-}
-
-@keyframes bgMove{
-from{transform:translate(0,0)}
-to{transform:translate(-120px,-120px)}
-}
-
 /* sidebar */
 
 .sidebar{
-width:260px;
+width:250px;
 background:#020617;
 border-right:1px solid rgba(255,255,255,0.05);
 padding:15px;
@@ -68,23 +46,6 @@ flex:1;
 overflow-y:auto;
 }
 
-.history-item{
-display:flex;
-justify-content:space-between;
-padding:10px;
-border-radius:8px;
-cursor:pointer;
-}
-
-.history-item:hover{
-background:#111827;
-}
-
-.menu{
-cursor:pointer;
-opacity:.6;
-}
-
 /* main */
 
 .main{
@@ -93,14 +54,10 @@ display:flex;
 flex-direction:column;
 }
 
-/* header */
-
 .header{
 padding:15px;
 border-bottom:1px solid rgba(255,255,255,0.05);
 }
-
-/* chat */
 
 .messages{
 flex:1;
@@ -111,38 +68,33 @@ padding:20px;
 .message{
 display:flex;
 gap:10px;
-margin:12px 0;
+margin:10px 0;
 }
 
 .user{justify-content:flex-end}
 .bot{justify-content:flex-start}
 
 .avatar{
-width:36px;
-height:36px;
+width:34px;
+height:34px;
 border-radius:50%;
 }
 
 .bubble{
 max-width:65%;
-padding:12px 16px;
-border-radius:16px;
+padding:12px;
+border-radius:14px;
 font-size:14px;
-line-height:1.5;
 }
 
 .user .bubble{
 background:rgba(0,0,0,0.25);
 border:1px solid #22c55e;
-box-shadow:0 0 10px rgba(34,197,94,0.4);
 }
 
 .bot .bubble{
 background:#111827;
-box-shadow:0 0 10px rgba(239,68,68,0.4);
 }
-
-/* input */
 
 .input-area{
 display:flex;
@@ -154,7 +106,7 @@ border-top:1px solid rgba(255,255,255,0.05);
 input{
 flex:1;
 padding:12px;
-border-radius:10px;
+border-radius:8px;
 border:none;
 background:#1e293b;
 color:white;
@@ -163,58 +115,10 @@ color:white;
 button{
 padding:12px 20px;
 border:none;
-border-radius:10px;
+border-radius:8px;
 background:#ef4444;
 color:white;
 cursor:pointer;
-}
-
-/* thinking */
-
-.thinking{
-display:flex;
-gap:6px;
-}
-
-.dot{
-width:6px;
-height:6px;
-background:#ef4444;
-border-radius:50%;
-animation:bounce 1.2s infinite;
-}
-
-.dot:nth-child(2){animation-delay:.2s}
-.dot:nth-child(3){animation-delay:.4s}
-
-@keyframes bounce{
-0%,80%,100%{transform:scale(0)}
-40%{transform:scale(1)}
-}
-
-/* popup */
-
-.popup{
-position:absolute;
-background:#111827;
-border-radius:8px;
-display:none;
-flex-direction:column;
-}
-
-.popup div{
-padding:8px 12px;
-cursor:pointer;
-}
-
-.popup div:hover{
-background:#1f2937;
-}
-
-@media(max-width:900px){
-
-.sidebar{display:none}
-
 }
 
 </style>
@@ -222,8 +126,6 @@ background:#1f2937;
 </head>
 
 <body>
-
-<div class="bg"></div>
 
 <div class="sidebar">
 
@@ -251,40 +153,56 @@ background:#1f2937;
 
 </div>
 
-<div id="popup" class="popup"></div>
-
 <script>
 
-/* DATA */
+/* storage */
 
 let sessions = JSON.parse(localStorage.getItem("siggy_sessions")) || []
+
 let currentSession=null
 
 const messages=document.getElementById("messages")
 const historyDiv=document.getElementById("history")
-const popup=document.getElementById("popup")
 
-/* SAVE */
+/* save */
 
 function save(){
 
-localStorage.setItem(
-"siggy_sessions",
-JSON.stringify(sessions)
-)
+localStorage.setItem("siggy_sessions",JSON.stringify(sessions))
 
 }
 
-/* NEW CHAT */
+/* sidebar */
+
+function renderSidebar(){
+
+historyDiv.innerHTML=""
+
+sessions.forEach(chat=>{
+
+let div=document.createElement("div")
+
+div.textContent=chat.title
+
+div.style.padding="8px"
+div.style.cursor="pointer"
+
+div.onclick=()=>loadSession(chat.id)
+
+historyDiv.appendChild(div)
+
+})
+
+}
+
+/* new chat */
 
 function newChat(){
 
 const chat={
 id:"chat_"+Date.now(),
 title:"New Chat",
-messages:[],
-pinned:false,
-archived:false
+messages:[]
 }
 
 sessions.push(chat)
@@ -301,44 +219,7 @@ greeting()
 
 }
 
-/* SIDEBAR */
-
-function renderSidebar(){
-
-historyDiv.innerHTML=""
-
-sessions
-.filter(c=>!c.archived)
-.sort((a,b)=>b.pinned-a.pinned)
-
-.forEach(chat=>{
-
-let item=document.createElement("div")
-
-item.className="history-item"
-
-item.innerHTML=`
-<span>${chat.pinned?"📌 ":""}${chat.title}</span>
-<span class="menu">⋯</span>
-`
-
-item.onclick=()=>loadSession(chat.id)
-
-item.querySelector(".menu").onclick=(e)=>{
-
-e.stopPropagation()
-
-openMenu(e.pageX,e.pageY,chat.id)
-
-}
-
-historyDiv.appendChild(item)
-
-})
-
-}
-
-/* LOAD SESSION */
+/* load */
 
 function loadSession(id){
 
@@ -349,12 +230,14 @@ messages.innerHTML=""
 let chat=sessions.find(c=>c.id===id)
 
 chat.messages.forEach(m=>{
+
 addMessage(m.text,m.type,false)
+
 })
 
 }
 
-/* ADD MESSAGE */
+/* add message */
 
 function addMessage(text,type,saveMsg=true){
 
@@ -362,15 +245,15 @@ let div=document.createElement("div")
 
 div.className=`message ${type}`
 
-let avatar=type==="bot"
-?"./ai-avatar.png"
-:"./user-avatar.png"
+let html=marked.parse(text)
 
-div.innerHTML=type==="user"
-?`<div class="bubble">${marked.parse(text)}</div>
-<img src="${avatar}" class="avatar">`
-:`<img src="${avatar}" class="avatar">
-<div class="bubble">${marked.parse(text)}</div>`
+div.innerHTML = type==="user"
+
+? `<div class="bubble">${html}</div>
+<img src="./user-avatar.png" class="avatar">`
+
+: `<img src="./ai-avatar.png" class="avatar">
+<div class="bubble">${html}</div>`
 
 messages.appendChild(div)
 
@@ -383,7 +266,9 @@ let chat=sessions.find(c=>c.id===currentSession)
 chat.messages.push({text,type})
 
 if(chat.messages.length===1){
+
 chat.title=text.substring(0,30)
+
 }
 
 save()
@@ -392,7 +277,7 @@ save()
 
 }
 
-/* SEND MESSAGE */
+/* send */
 
 async function sendMessage(){
 
@@ -406,27 +291,31 @@ addMessage(text,"user")
 
 input.value=""
 
-let think=showThinking()
+try{
 
 let res=await fetch("/api/chat",{
+
 method:"POST",
 headers:{"Content-Type":"application/json"},
 body:JSON.stringify({message:text})
+
 })
 
 let data=await res.json()
 
-think.remove()
+addMessage(data.response || "Siggy is thinking...", "bot")
 
-addMessage(data.response,"bot")
+}catch(err){
 
-renderSidebar()
+addMessage("⚠ Siggy cannot reach the oracle server right now.","bot")
 
 }
 
-/* ENTER SEND */
+}
 
-document.getElementById("msg").addEventListener("keydown",(e)=>{
+/* enter send */
+
+document.getElementById("msg").addEventListener("keydown",e=>{
 
 if(e.key==="Enter"){
 
@@ -438,102 +327,7 @@ sendMessage()
 
 })
 
-/* THINKING */
-
-function showThinking(){
-
-let div=document.createElement("div")
-
-div.className="message bot"
-
-div.innerHTML=`
-<img src="./ai-avatar.png" class="avatar">
-<div class="bubble">
-<div class="thinking">
-<div class="dot"></div>
-<div class="dot"></div>
-<div class="dot"></div>
-</div>
-</div>
-`
-
-messages.appendChild(div)
-
-return div
-
-}
-
-/* MENU */
-
-function openMenu(x,y,id){
-
-popup.style.left=x+"px"
-popup.style.top=y+"px"
-
-popup.innerHTML=`
-<div onclick="renameChat('${id}')">Rename</div>
-<div onclick="pinChat('${id}')">Pin</div>
-<div onclick="archiveChat('${id}')">Archive</div>
-<div onclick="deleteChat('${id}')">Delete</div>
-`
-
-popup.style.display="flex"
-
-}
-
-document.body.onclick=()=>popup.style.display="none"
-
-/* ACTIONS */
-
-function renameChat(id){
-
-let name=prompt("New name")
-
-if(!name) return
-
-sessions.find(c=>c.id===id).title=name
-
-save()
-
-renderSidebar()
-
-}
-
-function pinChat(id){
-
-let chat=sessions.find(c=>c.id===id)
-
-chat.pinned=!chat.pinned
-
-save()
-
-renderSidebar()
-
-}
-
-function archiveChat(id){
-
-sessions.find(c=>c.id===id).archived=true
-
-save()
-
-renderSidebar()
-
-}
-
-function deleteChat(id){
-
-sessions=sessions.filter(c=>c.id!==id)
-
-save()
-
-renderSidebar()
-
-messages.innerHTML=""
-
-}
-
-/* GREETING */
+/* greeting */
 
 function greeting(){
 
@@ -545,7 +339,7 @@ ask me anything.`, "bot")
 
 }
 
-/* LOAD */
+/* load page */
 
 document.addEventListener("DOMContentLoaded",()=>{
 
