@@ -1,15 +1,18 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
 
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-<title>Siggy Dormitory</title>
+<title>Siggy AI</title>
 
 <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
 
 <style>
+
+/* ===== BASE ===== */
 
 body{
 margin:0;
@@ -21,24 +24,48 @@ display:flex;
 overflow:hidden;
 }
 
-/* sidebar */
+/* ===== BACKGROUND ===== */
+
+.bg{
+position:fixed;
+top:-50%;
+left:-50%;
+width:200%;
+height:200%;
+background-image:url("./ritual-symbol.png");
+background-size:120px;
+opacity:0.05;
+animation:bgMove 60s linear infinite;
+pointer-events:none;
+}
+
+@keyframes bgMove{
+from{transform:translate(0,0)}
+to{transform:translate(-120px,-120px)}
+}
+
+/* ===== SIDEBAR ===== */
 
 .sidebar{
-width:250px;
-background:#020617;
+width:260px;
+background:rgba(2,6,23,0.95);
 border-right:1px solid rgba(255,255,255,0.05);
-padding:15px;
+padding:20px;
 display:flex;
 flex-direction:column;
 }
 
 .newchat{
-background:#111827;
 padding:10px;
 border-radius:8px;
+background:#111827;
 cursor:pointer;
+margin-bottom:15px;
 text-align:center;
-margin-bottom:10px;
+}
+
+.newchat:hover{
+background:#1f2937;
 }
 
 .history{
@@ -46,7 +73,19 @@ flex:1;
 overflow-y:auto;
 }
 
-/* main */
+.history-item{
+padding:10px;
+border-radius:8px;
+cursor:pointer;
+font-size:14px;
+opacity:0.8;
+}
+
+.history-item:hover{
+background:rgba(255,255,255,0.05);
+}
+
+/* ===== MAIN ===== */
 
 .main{
 flex:1;
@@ -54,10 +93,21 @@ display:flex;
 flex-direction:column;
 }
 
+/* ===== HEADER ===== */
+
 .header{
-padding:15px;
+display:flex;
+align-items:center;
+gap:10px;
+padding:16px;
 border-bottom:1px solid rgba(255,255,255,0.05);
 }
+
+.logo{
+width:40px;
+}
+
+/* ===== CHAT ===== */
 
 .messages{
 flex:1;
@@ -68,45 +118,56 @@ padding:20px;
 .message{
 display:flex;
 gap:10px;
-margin:10px 0;
+margin:12px 0;
 }
 
-.user{justify-content:flex-end}
-.bot{justify-content:flex-start}
+.user{
+justify-content:flex-end;
+}
+
+.bot{
+justify-content:flex-start;
+}
 
 .avatar{
-width:34px;
-height:34px;
+width:38px;
+height:38px;
 border-radius:50%;
+object-fit:cover;
 }
 
 .bubble{
 max-width:65%;
-padding:12px;
-border-radius:14px;
+padding:12px 16px;
+border-radius:16px;
 font-size:14px;
+line-height:1.5;
 }
 
 .user .bubble{
 background:rgba(0,0,0,0.25);
 border:1px solid #22c55e;
+box-shadow:0 0 10px rgba(34,197,94,0.4);
 }
 
 .bot .bubble{
 background:#111827;
+box-shadow:0 0 10px rgba(239,68,68,0.3);
 }
+
+/* ===== INPUT ===== */
 
 .input-area{
 display:flex;
 gap:10px;
-padding:15px;
+padding:16px;
 border-top:1px solid rgba(255,255,255,0.05);
 }
 
 input{
 flex:1;
 padding:12px;
-border-radius:8px;
+border-radius:10px;
 border:none;
 background:#1e293b;
 color:white;
@@ -115,10 +176,43 @@ color:white;
 button{
 padding:12px 20px;
 border:none;
-border-radius:8px;
+border-radius:10px;
 background:#ef4444;
 color:white;
 cursor:pointer;
+}
+
+/* ===== THINKING ===== */
+
+.thinking{
+display:flex;
+gap:6px;
+}
+
+.dot{
+width:6px;
+height:6px;
+background:#ef4444;
+border-radius:50%;
+animation:bounce 1.2s infinite;
+}
+
+.dot:nth-child(2){animation-delay:.2s}
+.dot:nth-child(3){animation-delay:.4s}
+
+@keyframes bounce{
+0%,80%,100%{transform:scale(0)}
+40%{transform:scale(1)}
+}
+
+/* ===== MOBILE ===== */
+
+@media(max-width:900px){
+
+.sidebar{
+display:none;
+}
+
 }
 
 </style>
@@ -126,6 +220,8 @@ cursor:pointer;
 </head>
 
 <body>
+
+<div class="bg"></div>
 
 <div class="sidebar">
 
@@ -138,7 +234,11 @@ cursor:pointer;
 <div class="main">
 
 <div class="header">
-🐱 Siggy · Mystical Oracle Cat
+
+<img src="./ritual-logo.png" class="logo">
+
+<strong>Siggy · Mystical Oracle Cat</strong>
+
 </div>
 
 <div id="messages" class="messages"></div>
@@ -155,71 +255,92 @@ cursor:pointer;
 
 <script>
 
-/* storage */
+let sessions = JSON.parse(localStorage.getItem("siggy_sessions")) || {}
 
-let sessions = JSON.parse(localStorage.getItem("siggy_sessions")) || []
-
-let currentSession=null
+let currentSession = null
 
 const messages=document.getElementById("messages")
 const historyDiv=document.getElementById("history")
 
-/* save */
+/* SAVE */
 
-function save(){
+function saveSessions(){
 
-localStorage.setItem("siggy_sessions",JSON.stringify(sessions))
-
-}
-
-/* sidebar */
-
-function renderSidebar(){
-
-historyDiv.innerHTML=""
-
-sessions.forEach(chat=>{
-
-let div=document.createElement("div")
-
-div.textContent=chat.title
-
-div.style.padding="8px"
-div.style.cursor="pointer"
-
-div.onclick=()=>loadSession(chat.id)
-
-historyDiv.appendChild(div)
-
-})
+localStorage.setItem(
+"siggy_sessions",
+JSON.stringify(sessions)
+)
 
 }
 
-/* new chat */
+/* NEW CHAT */
 
 function newChat(){
 
-const chat={
-id:"chat_"+Date.now(),
-title:"New Chat",
-messages:[]
-}
+const id = "chat_" + Date.now()
 
-sessions.push(chat)
+sessions[id] = []
 
-currentSession=chat.id
+currentSession = id
 
-save()
+saveSessions()
 
 renderSidebar()
 
-messages.innerHTML=""
+messages.innerHTML = ""
 
 greeting()
 
 }
 
-/* load */
+/* ADD MESSAGE */
+
+function addMessage(text,type,save=true){
+
+let div=document.createElement("div")
+
+div.className=`message ${type}`
+
+let avatar = type==="bot"
+? "./ai-avatar.png"
+: "./user-avatar.png"
+
+let html = marked.parse(text)
+
+if(type==="user"){
+
+div.innerHTML=`
+<div class="bubble">${html}</div>
+<img src="${avatar}" class="avatar">
+`
+
+}else{
+
+div.innerHTML=`
+<img src="${avatar}" class="avatar">
+<div class="bubble">${html}</div>
+`
+
+}
+
+messages.appendChild(div)
+
+messages.scrollTop = messages.scrollHeight
+
+if(save && currentSession){
+
+sessions[currentSession].push({
+text:text,
+type:type
+})
+
+saveSessions()
+
+}
+
+}
+
+/* LOAD SESSION */
 
 function loadSession(id){
 
@@ -227,57 +348,64 @@ currentSession=id
 
 messages.innerHTML=""
 
-let chat=sessions.find(c=>c.id===id)
+sessions[id].forEach(msg=>{
+addMessage(msg.text,msg.type,false)
+})
 
-chat.messages.forEach(m=>{
+}
 
-addMessage(m.text,m.type,false)
+/* SIDEBAR */
+
+function renderSidebar(){
+
+historyDiv.innerHTML=""
+
+Object.keys(sessions).reverse().forEach(id=>{
+
+let item=document.createElement("div")
+
+item.className="history-item"
+
+let first=sessions[id][0]
+
+item.innerText=first
+? first.text.substring(0,30)
+: "New Chat"
+
+item.onclick=()=>loadSession(id)
+
+historyDiv.appendChild(item)
 
 })
 
 }
 
-/* add message */
+/* THINKING */
 
-function addMessage(text,type,saveMsg=true){
+function showThinking(){
 
 let div=document.createElement("div")
 
-div.className=`message ${type}`
+div.className="message bot"
 
-let html=marked.parse(text)
-
-div.innerHTML = type==="user"
-
-? `<div class="bubble">${html}</div>
-<img src="./user-avatar.png" class="avatar">`
-
-: `<img src="./ai-avatar.png" class="avatar">
-<div class="bubble">${html}</div>`
+div.innerHTML=`
+<img src="./ai-avatar.png" class="avatar">
+<div class="bubble">
+<div class="thinking">
+<div class="dot"></div>
+<div class="dot"></div>
+<div class="dot"></div>
+</div>
+</div>
+`
 
 messages.appendChild(div)
 
-messages.scrollTop=messages.scrollHeight
-
-if(saveMsg){
-
-let chat=sessions.find(c=>c.id===currentSession)
-
-chat.messages.push({text,type})
-
-if(chat.messages.length===1){
-
-chat.title=text.substring(0,30)
+return div
 
 }
 
-save()
-
-}
-
-}
-
-/* send */
+/* SEND */
 
 async function sendMessage(){
 
@@ -291,73 +419,92 @@ addMessage(text,"user")
 
 input.value=""
 
-try{
+let thinking=showThinking()
 
 let res=await fetch("/api/chat",{
-
 method:"POST",
-headers:{"Content-Type":"application/json"},
-body:JSON.stringify({message:text})
-
+headers:{
+"Content-Type":"application/json"
+},
+body:JSON.stringify({
+message:text
+})
 })
 
 let data=await res.json()
 
-addMessage(data.response || "Siggy is thinking...", "bot")
+thinking.remove()
 
-}catch(err){
-
-addMessage("⚠ Siggy cannot reach the oracle server right now.","bot")
-
-}
-
-}
-
-/* enter send */
-
-document.getElementById("msg").addEventListener("keydown",e=>{
-
-if(e.key==="Enter"){
-
-e.preventDefault()
-
-sendMessage()
-
-}
-
-})
-
-/* greeting */
-
-function greeting(){
-
-addMessage(`yo traveler 👋  
-
-I'm **Siggy**, the mystical oracle cat of Ritual.
-
-ask me anything.`, "bot")
-
-}
-
-/* load page */
-
-document.addEventListener("DOMContentLoaded",()=>{
+addMessage(data.response,"bot")
 
 renderSidebar()
 
-if(sessions.length===0){
+}
+
+/* ENTER SEND */
+
+document.getElementById("msg").addEventListener("keypress",function(e){
+
+if(e.key==="Enter") sendMessage()
+
+})
+
+/* GREETING */
+
+function greeting(){
+
+const greetings=[
+
+`yo traveler 👋  
+
+I'm **Siggy**, the mystical oracle cat of Ritual.
+
+been wandering the network looking for secrets ✨  
+ask me anything.`,
+
+`hey there 👀  
+
+I'm **Siggy** — oracle cat and Ritual guide.
+
+what mystery are we exploring today? 🐾`,
+
+`welcome wanderer 🐱  
+
+you've reached **Siggy**, keeper of Ritual knowledge.
+
+ask your question.`
+
+]
+
+addMessage(
+greetings[Math.floor(Math.random()*greetings.length)],
+"bot"
+)
+
+}
+
+/* LOAD PAGE */
+
+window.onload=()=>{
+
+renderSidebar()
+
+if(Object.keys(sessions).length === 0){
 
 newChat()
 
 }else{
 
-loadSession(sessions[sessions.length-1].id)
+let last = Object.keys(sessions).pop()
+
+loadSession(last)
 
 }
 
-})
+}
 
 </script>
 
 </body>
+
 </html>
