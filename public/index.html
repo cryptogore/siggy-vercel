@@ -7,11 +7,10 @@
 
 <title>Siggy Dormitory</title>
 <link rel="icon" type="image/png" href="./ritual-symbol.png">
+<script src="https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
 
 <style>
-
-/* BASE */
 
 body{
 margin:0;
@@ -26,11 +25,8 @@ overflow:hidden;
 /* GRID BACKGROUND */
 
 body::before{
-
 content:"";
 position:fixed;
-top:0;
-left:0;
 width:100%;
 height:100%;
 
@@ -39,11 +35,8 @@ linear-gradient(rgba(0,255,255,0.03) 1px, transparent 1px),
 linear-gradient(90deg, rgba(0,255,255,0.03) 1px, transparent 1px);
 
 background-size:60px 60px;
-
 animation:gridMove 20s linear infinite;
-
 z-index:-5;
-
 }
 
 @keyframes gridMove{
@@ -60,7 +53,7 @@ border-right:1px solid rgba(255,255,255,0.05);
 padding:15px;
 display:flex;
 flex-direction:column;
-z-index:5;
+z-index:10;
 }
 
 .newchat{
@@ -80,7 +73,6 @@ overflow-y:auto;
 .history-item{
 display:flex;
 justify-content:space-between;
-align-items:center;
 padding:10px;
 border-radius:8px;
 cursor:pointer;
@@ -88,31 +80,6 @@ cursor:pointer;
 
 .history-item:hover{
 background:#111827;
-}
-
-.menu-btn{
-cursor:pointer;
-}
-
-/* CONTEXT MENU */
-
-.context-menu{
-position:fixed;
-background:#111827;
-border-radius:8px;
-display:none;
-flex-direction:column;
-min-width:150px;
-z-index:100;
-}
-
-.context-menu div{
-padding:10px;
-cursor:pointer;
-}
-
-.context-menu div:hover{
-background:#1f2937;
 }
 
 /* MAIN */
@@ -124,42 +91,16 @@ flex-direction:column;
 position:relative;
 }
 
-/* RITUAL SYMBOL */
+/* WEBGL CANVAS */
 
-.symbol-container{
+#ritual3d{
 position:absolute;
-top:50%;
-left:50%;
-transform:translate(-50%,-50%);
+top:0;
+left:0;
+width:100%;
+height:100%;
 pointer-events:none;
-opacity:0.12;
-}
-
-.symbol{
-width:380px;
-animation:spin 80s linear infinite;
-}
-
-@keyframes spin{
-0%{transform:rotateY(0deg)}
-100%{transform:rotateY(360deg)}
-}
-
-/* PARTICLES */
-
-.particle{
-position:absolute;
-width:3px;
-height:3px;
-background:#00ffff;
-border-radius:50%;
-opacity:.5;
-animation:particleFloat linear infinite;
-}
-
-@keyframes particleFloat{
-0%{transform:translateY(0)}
-100%{transform:translateY(-400px)}
+z-index:0;
 }
 
 /* HEADER */
@@ -167,6 +108,7 @@ animation:particleFloat linear infinite;
 .header{
 padding:15px;
 border-bottom:1px solid rgba(255,255,255,0.05);
+z-index:5;
 }
 
 /* CHAT */
@@ -175,6 +117,7 @@ border-bottom:1px solid rgba(255,255,255,0.05);
 flex:1;
 overflow-y:auto;
 padding:20px;
+z-index:5;
 }
 
 .message{
@@ -183,13 +126,8 @@ gap:10px;
 margin:10px 0;
 }
 
-.user{
-justify-content:flex-end;
-}
-
-.bot{
-justify-content:flex-start;
-}
+.user{justify-content:flex-end}
+.bot{justify-content:flex-start}
 
 .avatar{
 width:32px;
@@ -220,6 +158,7 @@ display:flex;
 gap:10px;
 padding:15px;
 border-top:1px solid rgba(255,255,255,0.05);
+z-index:5;
 }
 
 input{
@@ -240,31 +179,7 @@ color:white;
 cursor:pointer;
 }
 
-/* THINKING */
-
-.thinking{
-display:flex;
-gap:6px;
-}
-
-.dot{
-width:6px;
-height:6px;
-background:#ef4444;
-border-radius:50%;
-animation:bounce 1.2s infinite;
-}
-
-.dot:nth-child(2){animation-delay:.2s}
-.dot:nth-child(3){animation-delay:.4s}
-
-@keyframes bounce{
-0%,80%,100%{transform:scale(0)}
-40%{transform:scale(1)}
-}
-
 </style>
-
 </head>
 
 <body>
@@ -272,16 +187,13 @@ animation:bounce 1.2s infinite;
 <div class="sidebar">
 
 <div class="newchat" onclick="newChat()">+ New Chat</div>
-
 <div id="history" class="history"></div>
 
 </div>
 
 <div class="main">
 
-<div class="symbol-container">
-<img src="./ritual-symbol.png" class="symbol">
-</div>
+<canvas id="ritual3d"></canvas>
 
 <div class="header">
 🐱 Siggy · Mystical Oracle Cat
@@ -290,188 +202,150 @@ animation:bounce 1.2s infinite;
 <div id="messages" class="messages"></div>
 
 <div class="input-area">
-
 <input id="msg" placeholder="Ask Siggy something...">
 <button onclick="sendMessage()">Send</button>
-
 </div>
 
 </div>
-
-<div id="menu" class="context-menu"></div>
 
 <script>
 
-/* RANDOM GREETINGS */
+/* THREEJS SETUP */
 
-const greetings=[
+const canvas=document.getElementById("ritual3d")
 
-"yo traveler 👋 I'm Siggy — mystical oracle cat of Ritual.",
-"psst... hey explorer 🐾 Siggy here.",
-"welcome wanderer ✨ Ritual world is wide.",
-"hey there stranger 😼 ready for some arcane knowledge?",
-"ah another curious soul 🔮 what do you seek?",
-"well well... someone opened the portal again.",
-"hi human 👋 Siggy online. what's the vibe today?",
-"yo 👀 Siggy here — guide through the Ritual universe.",
-"heya ✨ what's cooking in your brain today?",
-"sup traveler 🐱 ready to explore Ritual?"
+const scene=new THREE.Scene()
 
-]
+const camera=new THREE.PerspectiveCamera(
+60,
+window.innerWidth/window.innerHeight,
+0.1,
+1000
+)
 
-function randomGreeting(){
-return greetings[Math.floor(Math.random()*greetings.length)]
+camera.position.z=5
+
+const renderer=new THREE.WebGLRenderer({
+canvas,
+alpha:true
+})
+
+renderer.setSize(window.innerWidth,window.innerHeight)
+
+/* SYMBOL */
+
+const loader=new THREE.TextureLoader()
+
+loader.load("./ritual-symbol.png",(texture)=>{
+
+const img=texture.image
+const ratio=img.width/img.height
+
+const geometry=new THREE.PlaneGeometry(3*ratio,3)
+
+const material=new THREE.MeshBasicMaterial({
+map:texture,
+transparent:true
+})
+
+const symbol=new THREE.Mesh(geometry,material)
+
+scene.add(symbol)
+
+/* NEON AURA */
+
+const auraGeometry=new THREE.RingGeometry(2.2,2.6,64)
+
+const auraMaterial=new THREE.MeshBasicMaterial({
+color:0x00ff88,
+transparent:true,
+opacity:0.35,
+side:THREE.DoubleSide
+})
+
+const aura=new THREE.Mesh(auraGeometry,auraMaterial)
+
+aura.rotation.x=Math.PI/2
+
+scene.add(aura)
+
+/* PARTICLE VORTEX */
+
+const particles=[]
+
+const particleGeometry=new THREE.SphereGeometry(0.03,8,8)
+const particleMaterial=new THREE.MeshBasicMaterial({color:0x00ff88})
+
+for(let i=0;i<120;i++){
+
+let p=new THREE.Mesh(particleGeometry,particleMaterial)
+
+let angle=Math.random()*Math.PI*2
+let radius=2+Math.random()*0.5
+
+p.userData={angle,radius}
+
+scene.add(p)
+particles.push(p)
+
 }
 
-/* STORAGE */
+/* LIGHT */
 
-let sessions=JSON.parse(localStorage.getItem("siggy_sessions"))||[]
-let currentSession=null
+const light=new THREE.PointLight(0x00ff88,2,10)
+light.position.set(0,0,3)
+
+scene.add(light)
+
+/* ANIMATION */
+
+function animate(){
+
+requestAnimationFrame(animate)
+
+symbol.rotation.y+=0.003
+symbol.rotation.x+=0.001
+
+aura.rotation.z+=0.002
+
+particles.forEach(p=>{
+
+p.userData.angle+=0.01
+
+p.position.x=Math.cos(p.userData.angle)*p.userData.radius
+p.position.y=Math.sin(p.userData.angle)*p.userData.radius
+p.position.z=Math.sin(p.userData.angle*2)*0.5
+
+})
+
+renderer.render(scene,camera)
+
+}
+
+animate()
+
+})
+
+/* RESIZE */
+
+window.addEventListener("resize",()=>{
+
+renderer.setSize(window.innerWidth,window.innerHeight)
+
+camera.aspect=window.innerWidth/window.innerHeight
+
+camera.updateProjectionMatrix()
+
+})
+
+/* CHAT SYSTEM */
 
 const messages=document.getElementById("messages")
-const historyDiv=document.getElementById("history")
 
-function save(){
-localStorage.setItem("siggy_sessions",JSON.stringify(sessions))
-}
-
-/* SIDEBAR */
-
-function renderSidebar(){
-
-historyDiv.innerHTML=""
-
-sessions
-.filter(c=>!c.archived)
-.sort((a,b)=>b.pinned-a.pinned)
-
-.forEach(chat=>{
+function addMessage(text,type){
 
 let div=document.createElement("div")
-div.className="history-item"
 
-div.innerHTML=`
-<span class="chat-title">${chat.pinned?"📌 ":""}${chat.title}</span>
-<span class="menu-btn">⋯</span>
-`
-
-div.querySelector(".chat-title").onclick=()=>loadSession(chat.id)
-
-div.querySelector(".menu-btn").onclick=(e)=>{
-e.stopPropagation()
-openMenu(e,chat.id)
-}
-
-historyDiv.appendChild(div)
-
-})
-
-}
-
-/* MENU */
-
-function openMenu(e,id){
-
-const menu=document.getElementById("menu")
-
-menu.style.display="flex"
-menu.style.left=e.pageX+"px"
-menu.style.top=e.pageY+"px"
-
-menu.innerHTML=`
-<div onclick="renameChat('${id}')">Rename</div>
-<div onclick="pinChat('${id}')">Pin</div>
-<div onclick="archiveChat('${id}')">Archive</div>
-<div onclick="deleteChat('${id}')">Delete</div>
-`
-
-}
-
-function renameChat(id){
-
-let name=prompt("Rename chat")
-if(!name)return
-
-sessions.find(c=>c.id===id).title=name
-save()
-renderSidebar()
-
-}
-
-function pinChat(id){
-
-let chat=sessions.find(c=>c.id===id)
-chat.pinned=!chat.pinned
-
-save()
-renderSidebar()
-
-}
-
-function archiveChat(id){
-
-sessions.find(c=>c.id===id).archived=true
-save()
-renderSidebar()
-
-}
-
-function deleteChat(id){
-
-sessions=sessions.filter(c=>c.id!==id)
-save()
-renderSidebar()
-
-}
-
-document.body.onclick=()=>{
-document.getElementById("menu").style.display="none"
-}
-
-/* NEW CHAT */
-
-function newChat(){
-
-const chat={
-id:"chat_"+Date.now(),
-title:"New Chat",
-messages:[],
-pinned:false,
-archived:false
-}
-
-sessions.push(chat)
-currentSession=chat.id
-
-save()
-renderSidebar()
-
-messages.innerHTML=""
-
-addMessage(randomGreeting(),"bot")
-
-}
-
-/* LOAD CHAT */
-
-function loadSession(id){
-
-currentSession=id
-messages.innerHTML=""
-
-let chat=sessions.find(c=>c.id===id)
-
-chat.messages.forEach(m=>{
-addMessage(m.text,m.type,false)
-})
-
-}
-
-/* MESSAGE */
-
-function addMessage(text,type,saveMsg=true){
-
-let div=document.createElement("div")
 div.className=`message ${type}`
 
 div.innerHTML=type==="user"
@@ -481,62 +355,15 @@ div.innerHTML=type==="user"
 <div class="bubble">${marked.parse(text)}</div>`
 
 messages.appendChild(div)
-messages.scrollTop=messages.scrollHeight
-
-if(saveMsg){
-
-let chat=sessions.find(c=>c.id===currentSession)
-
-chat.messages.push({text,type})
-
-if(chat.messages.length===1){
-chat.title=text.substring(0,30)
-}
-
-save()
-
-}
-
-}
-
-/* STREAMING RESPONSE */
-
-function streamText(text){
-
-let bubble=document.createElement("div")
-bubble.className="bubble"
-
-let container=document.createElement("div")
-container.className="message bot"
-
-container.innerHTML=`<img src="./ai-avatar.png" class="avatar">`
-container.appendChild(bubble)
-
-messages.appendChild(container)
-
-let i=0
-
-let interval=setInterval(()=>{
-
-bubble.innerHTML=marked.parse(text.substring(0,i))
 
 messages.scrollTop=messages.scrollHeight
 
-i++
-
-if(i>text.length){
-clearInterval(interval)
 }
-
-},15)
-
-}
-
-/* SEND MESSAGE */
 
 async function sendMessage(){
 
 let input=document.getElementById("msg")
+
 let text=input.value.trim()
 
 if(!text)return
@@ -544,10 +371,6 @@ if(!text)return
 addMessage(text,"user")
 
 input.value=""
-
-let think=showThinking()
-
-try{
 
 let res=await fetch("/api/chat",{
 method:"POST",
@@ -557,66 +380,20 @@ body:JSON.stringify({message:text})
 
 let data=await res.json()
 
-think.remove()
-
-streamText(data.response || "Siggy is thinking...")
-
-}catch{
-
-think.remove()
-addMessage("⚠ Siggy cannot reach the oracle server.","bot")
-
-}
+addMessage(data.response || "Siggy is thinking...","bot")
 
 }
 
 document.getElementById("msg").addEventListener("keydown",(e)=>{
-
 if(e.key==="Enter"){
 e.preventDefault()
 sendMessage()
 }
-
 })
 
-/* THINKING */
+/* GREETING */
 
-function showThinking(){
-
-let div=document.createElement("div")
-
-div.className="message bot"
-
-div.innerHTML=`
-<img src="./ai-avatar.png" class="avatar">
-<div class="bubble">
-<div class="thinking">
-<div class="dot"></div>
-<div class="dot"></div>
-<div class="dot"></div>
-</div>
-</div>
-`
-
-messages.appendChild(div)
-
-return div
-
-}
-
-/* INIT */
-
-document.addEventListener("DOMContentLoaded",()=>{
-
-renderSidebar()
-
-if(sessions.length===0){
-newChat()
-}else{
-loadSession(sessions[sessions.length-1].id)
-}
-
-})
+addMessage("welcome wanderer ✨","bot")
 
 </script>
 
