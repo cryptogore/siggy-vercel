@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
 
 <meta charset="UTF-8">
@@ -36,7 +37,6 @@ background-size:120px;
 opacity:0.05;
 animation:bgMove 60s linear infinite;
 pointer-events:none;
-z-index:0;
 }
 
 @keyframes bgMove{
@@ -53,7 +53,6 @@ border-right:1px solid rgba(255,255,255,0.05);
 padding:20px;
 display:flex;
 flex-direction:column;
-z-index:2;
 }
 
 .sidebar h2{
@@ -70,11 +69,6 @@ padding:10px;
 border-radius:8px;
 font-size:14px;
 opacity:0.8;
-cursor:pointer;
-}
-
-.history-item:hover{
-background:rgba(255,255,255,0.05);
 }
 
 /* ===== MAIN ===== */
@@ -83,7 +77,6 @@ background:rgba(255,255,255,0.05);
 flex:1;
 display:flex;
 flex-direction:column;
-z-index:2;
 }
 
 /* ===== HEADER ===== */
@@ -98,10 +91,6 @@ border-bottom:1px solid rgba(255,255,255,0.05);
 
 .logo{
 width:40px;
-}
-
-.title{
-font-weight:bold;
 }
 
 /* ===== CHAT ===== */
@@ -130,10 +119,9 @@ justify-content:flex-start;
 width:38px;
 height:38px;
 border-radius:50%;
-object-fit:cover;
 }
 
-/* ===== BUBBLE ===== */
+/* ===== BUBBLES ===== */
 
 .bubble{
 max-width:65%;
@@ -181,7 +169,7 @@ color:white;
 cursor:pointer;
 }
 
-/* ===== THINKING DOTS ===== */
+/* ===== THINKING ===== */
 
 .thinking{
 display:flex;
@@ -204,23 +192,10 @@ animation:bounce 1.2s infinite;
 40%{transform:scale(1)}
 }
 
-/* ===== SCROLLBAR ===== */
-
-::-webkit-scrollbar{width:6px}
-::-webkit-scrollbar-track{background:transparent}
-::-webkit-scrollbar-thumb{
-background:rgba(255,255,255,0.15);
-border-radius:10px;
-}
-
 /* ===== MOBILE ===== */
 
 @media(max-width:900px){
-
-.sidebar{
-display:none;
-}
-
+.sidebar{display:none}
 }
 
 </style>
@@ -237,6 +212,8 @@ display:none;
 
 <div id="history" class="history"></div>
 
+<button onclick="clearChat()">Clear Chat</button>
+
 </div>
 
 <div class="main">
@@ -245,7 +222,7 @@ display:none;
 
 <img src="./ritual-logo.png" class="logo">
 
-<div class="title">Siggy · Mystical Oracle Cat</div>
+<strong>Siggy · Mystical Oracle Cat</strong>
 
 </div>
 
@@ -266,7 +243,38 @@ display:none;
 const messages=document.getElementById("messages")
 const historyDiv=document.getElementById("history")
 
-function addMessage(text,type){
+let chatHistory=[]
+
+/* ===== SAVE HISTORY ===== */
+
+function saveHistory(){
+
+localStorage.setItem(
+"siggy_chat_history",
+JSON.stringify(chatHistory)
+)
+
+}
+
+/* ===== LOAD HISTORY ===== */
+
+function loadHistory(){
+
+let saved=localStorage.getItem("siggy_chat_history")
+
+if(!saved) return
+
+chatHistory=JSON.parse(saved)
+
+chatHistory.forEach(msg=>{
+addMessage(msg.text,msg.type,false)
+})
+
+}
+
+/* ===== ADD MESSAGE ===== */
+
+function addMessage(text,type,save=true){
 
 let div=document.createElement("div")
 div.className=`message ${type}`
@@ -294,9 +302,20 @@ div.innerHTML=`
 }
 
 messages.appendChild(div)
+
 messages.scrollTop=messages.scrollHeight
 
+if(save){
+
+chatHistory.push({text:text,type:type})
+
+saveHistory()
+
 }
+
+}
+
+/* ===== THINKING ===== */
 
 function showThinking(){
 
@@ -320,25 +339,17 @@ return div
 
 }
 
-function addHistory(text){
-
-let item=document.createElement("div")
-item.className="history-item"
-item.innerText=text.substring(0,40)
-
-historyDiv.prepend(item)
-
-}
+/* ===== SEND MESSAGE ===== */
 
 async function sendMessage(){
 
 let input=document.getElementById("msg")
+
 let text=input.value.trim()
 
 if(!text) return
 
 addMessage(text,"user")
-addHistory(text)
 
 input.value=""
 
@@ -358,9 +369,21 @@ addMessage(data.response,"bot")
 
 }
 
+/* ===== ENTER SEND ===== */
+
 document.getElementById("msg").addEventListener("keypress",e=>{
 if(e.key==="Enter") sendMessage()
 })
+
+/* ===== CLEAR CHAT ===== */
+
+function clearChat(){
+
+localStorage.removeItem("siggy_chat_history")
+
+location.reload()
+
+}
 
 /* ===== GREETING ===== */
 
@@ -370,23 +393,22 @@ const greetings=[
 
 `yo traveler 👋  
 
-I'm **Siggy**, the mystical oracle cat of Ritual.  
+I'm **Siggy**, the mystical oracle cat of Ritual.
 
-been wandering the network all night looking for secrets ✨  
-
+been wandering the network looking for secrets ✨  
 ask me anything.`,
 
 `hey there 👀  
 
-I'm **Siggy** — oracle cat, Ritual guide, and collector of strange knowledge.  
+I'm **Siggy** — oracle cat and Ritual guide.
 
-what are you curious about today? 🐾`,
+what mystery are we exploring today? 🐾`,
 
 `welcome wanderer 🐱  
 
-you've found **Siggy**, the oracle cat of the Ritual realm.  
+you've reached **Siggy**, keeper of Ritual knowledge.
 
-ask a question and let's explore.`
+ask your question.`
 
 ]
 
@@ -397,9 +419,20 @@ greetings[Math.floor(Math.random()*greetings.length)],
 
 }
 
-window.onload=greeting
+/* ===== PAGE LOAD ===== */
+
+window.onload=()=>{
+
+loadHistory()
+
+if(chatHistory.length===0){
+greeting()
+}
+
+}
 
 </script>
 
 </body>
+
 </html>
