@@ -47,16 +47,25 @@ to{transform:translate(-120px,-120px)}
 /* ===== SIDEBAR ===== */
 
 .sidebar{
-width:250px;
-background:rgba(2,6,23,0.9);
+width:260px;
+background:rgba(2,6,23,0.95);
 border-right:1px solid rgba(255,255,255,0.05);
 padding:20px;
 display:flex;
 flex-direction:column;
 }
 
-.sidebar h2{
-margin:0 0 20px 0;
+.newchat{
+padding:10px;
+border-radius:8px;
+background:#111827;
+cursor:pointer;
+margin-bottom:15px;
+text-align:center;
+}
+
+.newchat:hover{
+background:#1f2937;
 }
 
 .history{
@@ -67,8 +76,13 @@ overflow-y:auto;
 .history-item{
 padding:10px;
 border-radius:8px;
+cursor:pointer;
 font-size:14px;
 opacity:0.8;
+}
+
+.history-item:hover{
+background:rgba(255,255,255,0.05);
 }
 
 /* ===== MAIN ===== */
@@ -119,9 +133,8 @@ justify-content:flex-start;
 width:38px;
 height:38px;
 border-radius:50%;
+object-fit:cover;
 }
-
-/* ===== BUBBLES ===== */
 
 .bubble{
 max-width:65%;
@@ -195,7 +208,11 @@ animation:bounce 1.2s infinite;
 /* ===== MOBILE ===== */
 
 @media(max-width:900px){
-.sidebar{display:none}
+
+.sidebar{
+display:none;
+}
+
 }
 
 </style>
@@ -208,11 +225,9 @@ animation:bounce 1.2s infinite;
 
 <div class="sidebar">
 
-<h2>Chats</h2>
+<div class="newchat" onclick="newChat()">+ New Chat</div>
 
 <div id="history" class="history"></div>
-
-<button onclick="clearChat()">Clear Chat</button>
 
 </div>
 
@@ -240,50 +255,57 @@ animation:bounce 1.2s infinite;
 
 <script>
 
+let sessions = JSON.parse(localStorage.getItem("siggy_sessions")) || {}
+
+let currentSession = null
+
 const messages=document.getElementById("messages")
 const historyDiv=document.getElementById("history")
 
-let chatHistory=[]
+/* SAVE */
 
-/* ===== SAVE HISTORY ===== */
-
-function saveHistory(){
+function saveSessions(){
 
 localStorage.setItem(
-"siggy_chat_history",
-JSON.stringify(chatHistory)
+"siggy_sessions",
+JSON.stringify(sessions)
 )
 
 }
 
-/* ===== LOAD HISTORY ===== */
+/* NEW CHAT */
 
-function loadHistory(){
+function newChat(){
 
-let saved=localStorage.getItem("siggy_chat_history")
+const id = "chat_" + Date.now()
 
-if(!saved) return
+sessions[id] = []
 
-chatHistory=JSON.parse(saved)
+currentSession = id
 
-chatHistory.forEach(msg=>{
-addMessage(msg.text,msg.type,false)
-})
+saveSessions()
+
+renderSidebar()
+
+messages.innerHTML = ""
+
+greeting()
 
 }
 
-/* ===== ADD MESSAGE ===== */
+/* ADD MESSAGE */
 
 function addMessage(text,type,save=true){
 
 let div=document.createElement("div")
+
 div.className=`message ${type}`
 
-let avatar=type==="bot"
+let avatar = type==="bot"
 ? "./ai-avatar.png"
 : "./user-avatar.png"
 
-let html=marked.parse(text)
+let html = marked.parse(text)
 
 if(type==="user"){
 
@@ -303,23 +325,67 @@ div.innerHTML=`
 
 messages.appendChild(div)
 
-messages.scrollTop=messages.scrollHeight
+messages.scrollTop = messages.scrollHeight
 
-if(save){
+if(save && currentSession){
 
-chatHistory.push({text:text,type:type})
+sessions[currentSession].push({
+text:text,
+type:type
+})
 
-saveHistory()
+saveSessions()
 
 }
 
 }
 
-/* ===== THINKING ===== */
+/* LOAD SESSION */
+
+function loadSession(id){
+
+currentSession=id
+
+messages.innerHTML=""
+
+sessions[id].forEach(msg=>{
+addMessage(msg.text,msg.type,false)
+})
+
+}
+
+/* SIDEBAR */
+
+function renderSidebar(){
+
+historyDiv.innerHTML=""
+
+Object.keys(sessions).reverse().forEach(id=>{
+
+let item=document.createElement("div")
+
+item.className="history-item"
+
+let first=sessions[id][0]
+
+item.innerText=first
+? first.text.substring(0,30)
+: "New Chat"
+
+item.onclick=()=>loadSession(id)
+
+historyDiv.appendChild(item)
+
+})
+
+}
+
+/* THINKING */
 
 function showThinking(){
 
 let div=document.createElement("div")
+
 div.className="message bot"
 
 div.innerHTML=`
@@ -339,7 +405,7 @@ return div
 
 }
 
-/* ===== SEND MESSAGE ===== */
+/* SEND */
 
 async function sendMessage(){
 
@@ -357,8 +423,12 @@ let thinking=showThinking()
 
 let res=await fetch("/api/chat",{
 method:"POST",
-headers:{"Content-Type":"application/json"},
-body:JSON.stringify({message:text})
+headers:{
+"Content-Type":"application/json"
+},
+body:JSON.stringify({
+message:text
+})
 })
 
 let data=await res.json()
@@ -367,25 +437,19 @@ thinking.remove()
 
 addMessage(data.response,"bot")
 
+renderSidebar()
+
 }
 
-/* ===== ENTER SEND ===== */
+/* ENTER SEND */
 
-document.getElementById("msg").addEventListener("keypress",e=>{
+document.getElementById("msg").addEventListener("keypress",function(e){
+
 if(e.key==="Enter") sendMessage()
+
 })
 
-/* ===== CLEAR CHAT ===== */
-
-function clearChat(){
-
-localStorage.removeItem("siggy_chat_history")
-
-location.reload()
-
-}
-
-/* ===== GREETING ===== */
+/* GREETING */
 
 function greeting(){
 
@@ -419,14 +483,22 @@ greetings[Math.floor(Math.random()*greetings.length)],
 
 }
 
-/* ===== PAGE LOAD ===== */
+/* LOAD PAGE */
 
 window.onload=()=>{
 
-loadHistory()
+renderSidebar()
 
-if(chatHistory.length===0){
-greeting()
+if(Object.keys(sessions).length === 0){
+
+newChat()
+
+}else{
+
+let last = Object.keys(sessions).pop()
+
+loadSession(last)
+
 }
 
 }
