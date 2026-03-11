@@ -1,6 +1,5 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
 
 <meta charset="UTF-8">
@@ -14,8 +13,6 @@
 
 <style>
 
-/* BASE */
-
 body{
 margin:0;
 font-family:system-ui;
@@ -26,7 +23,7 @@ display:flex;
 overflow:hidden;
 }
 
-/* BACKGROUND */
+/* background */
 
 .bg{
 position:fixed;
@@ -46,7 +43,7 @@ from{transform:translate(0,0)}
 to{transform:translate(-120px,-120px)}
 }
 
-/* SIDEBAR */
+/* sidebar */
 
 .sidebar{
 width:260px;
@@ -62,8 +59,8 @@ background:#111827;
 padding:10px;
 border-radius:8px;
 cursor:pointer;
-margin-bottom:10px;
 text-align:center;
+margin-bottom:10px;
 }
 
 .history{
@@ -74,7 +71,6 @@ overflow-y:auto;
 .history-item{
 display:flex;
 justify-content:space-between;
-align-items:center;
 padding:10px;
 border-radius:8px;
 cursor:pointer;
@@ -84,12 +80,12 @@ cursor:pointer;
 background:#111827;
 }
 
-.menu-btn{
-opacity:.6;
+.menu{
 cursor:pointer;
+opacity:.6;
 }
 
-/* MAIN */
+/* main */
 
 .main{
 flex:1;
@@ -97,17 +93,14 @@ display:flex;
 flex-direction:column;
 }
 
-/* HEADER */
+/* header */
 
 .header{
-display:flex;
-align-items:center;
-gap:10px;
 padding:15px;
 border-bottom:1px solid rgba(255,255,255,0.05);
 }
 
-/* CHAT */
+/* chat */
 
 .messages{
 flex:1;
@@ -138,22 +131,18 @@ font-size:14px;
 line-height:1.5;
 }
 
-/* USER */
-
 .user .bubble{
 background:rgba(0,0,0,0.25);
 border:1px solid #22c55e;
-box-shadow:0 0 8px rgba(34,197,94,.4);
+box-shadow:0 0 10px rgba(34,197,94,0.4);
 }
-
-/* AI */
 
 .bot .bubble{
 background:#111827;
-box-shadow:0 0 8px rgba(239,68,68,.4);
+box-shadow:0 0 10px rgba(239,68,68,0.4);
 }
 
-/* INPUT */
+/* input */
 
 .input-area{
 display:flex;
@@ -180,11 +169,11 @@ color:white;
 cursor:pointer;
 }
 
-/* THINKING */
+/* thinking */
 
 .thinking{
 display:flex;
-gap:5px;
+gap:6px;
 }
 
 .dot{
@@ -203,13 +192,12 @@ animation:bounce 1.2s infinite;
 40%{transform:scale(1)}
 }
 
-/* MENU POPUP */
+/* popup */
 
 .popup{
 position:absolute;
 background:#111827;
 border-radius:8px;
-padding:5px;
 display:none;
 flex-direction:column;
 }
@@ -223,13 +211,9 @@ cursor:pointer;
 background:#1f2937;
 }
 
-/* MOBILE */
-
 @media(max-width:900px){
 
-.sidebar{
-display:none;
-}
+.sidebar{display:none}
 
 }
 
@@ -252,9 +236,7 @@ display:none;
 <div class="main">
 
 <div class="header">
-
-<strong>🐱 Siggy · Mystical Oracle Cat</strong>
-
+🐱 Siggy · Mystical Oracle Cat
 </div>
 
 <div id="messages" class="messages"></div>
@@ -273,13 +255,16 @@ display:none;
 
 <script>
 
-let sessions = JSON.parse(localStorage.getItem("siggy_sessions")) || []
+/* DATA */
 
+let sessions = JSON.parse(localStorage.getItem("siggy_sessions")) || []
 let currentSession=null
 
 const messages=document.getElementById("messages")
 const historyDiv=document.getElementById("history")
 const popup=document.getElementById("popup")
+
+/* SAVE */
 
 function save(){
 
@@ -334,12 +319,12 @@ item.className="history-item"
 
 item.innerHTML=`
 <span>${chat.pinned?"📌 ":""}${chat.title}</span>
-<span class="menu-btn">⋯</span>
+<span class="menu">⋯</span>
 `
 
 item.onclick=()=>loadSession(chat.id)
 
-item.querySelector(".menu-btn").onclick=(e)=>{
+item.querySelector(".menu").onclick=(e)=>{
 
 e.stopPropagation()
 
@@ -353,7 +338,7 @@ historyDiv.appendChild(item)
 
 }
 
-/* LOAD */
+/* LOAD SESSION */
 
 function loadSession(id){
 
@@ -369,7 +354,7 @@ addMessage(m.text,m.type,false)
 
 }
 
-/* MESSAGE */
+/* ADD MESSAGE */
 
 function addMessage(text,type,saveMsg=true){
 
@@ -407,7 +392,7 @@ save()
 
 }
 
-/* SEND */
+/* SEND MESSAGE */
 
 async function sendMessage(){
 
@@ -438,6 +423,20 @@ addMessage(data.response,"bot")
 renderSidebar()
 
 }
+
+/* ENTER SEND */
+
+document.getElementById("msg").addEventListener("keydown",(e)=>{
+
+if(e.key==="Enter"){
+
+e.preventDefault()
+
+sendMessage()
+
+}
+
+})
 
 /* THINKING */
 
@@ -542,13 +541,13 @@ addMessage(`yo traveler 👋
 
 I'm **Siggy**, the mystical oracle cat of Ritual.
 
-ask me anything.`,"bot")
+ask me anything.`, "bot")
 
 }
 
 /* LOAD */
 
-window.onload=()=>{
+document.addEventListener("DOMContentLoaded",()=>{
 
 renderSidebar()
 
@@ -562,7 +561,7 @@ loadSession(sessions[sessions.length-1].id)
 
 }
 
-}
+})
 
 </script>
 
