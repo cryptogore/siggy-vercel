@@ -1,4 +1,624 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<title>Siggy Dormitory</title>
+<link rel="icon" type="image/png" href="./ritual-symbol.png">
+<script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+
+<style>
+
+/* BASE */
+
+body{
+margin:0;
+font-family:system-ui;
+background:#020617;
+color:white;
+height:100vh;
+display:flex;
+overflow:hidden;
+}
+
+/* GRID BACKGROUND */
+
+body::before{
+
+content:"";
+position:fixed;
+top:0;
+left:0;
+width:100%;
+height:100%;
+
+background-image:
+linear-gradient(rgba(0,255,255,0.03) 1px, transparent 1px),
+linear-gradient(90deg, rgba(0,255,255,0.03) 1px, transparent 1px);
+
+background-size:60px 60px;
+
+animation:gridMove 20s linear infinite;
+
+z-index:-5;
+
+}
+
+@keyframes gridMove{
+0%{background-position:0 0}
+100%{background-position:60px 60px}
+}
+
+/* SIDEBAR */
+
+.sidebar{
+width:260px;
+background:#020617;
+border-right:1px solid rgba(255,255,255,0.05);
+padding:15px;
+display:flex;
+flex-direction:column;
+z-index:5;
+}
+
+.newchat{
+background:#111827;
+padding:10px;
+border-radius:8px;
+cursor:pointer;
+margin-bottom:10px;
+text-align:center;
+}
+
+.history{
+flex:1;
+overflow-y:auto;
+}
+
+.history-item{
+display:flex;
+justify-content:space-between;
+align-items:center;
+padding:10px;
+border-radius:8px;
+cursor:pointer;
+}
+
+.history-item:hover{
+background:#111827;
+}
+
+.menu-btn{
+cursor:pointer;
+}
+
+/* CONTEXT MENU */
+
+.context-menu{
+position:fixed;
+background:#111827;
+border-radius:8px;
+display:none;
+flex-direction:column;
+min-width:150px;
+z-index:100;
+}
+
+.context-menu div{
+padding:10px;
+cursor:pointer;
+}
+
+.context-menu div:hover{
+background:#1f2937;
+}
+
+/* MAIN */
+
+.main{
+flex:1;
+display:flex;
+flex-direction:column;
+position:relative;
+}
+
+/* RITUAL SYMBOL */
+
+.symbol-container{
+position:absolute;
+top:50%;
+left:50%;
+transform:translate(-50%,-50%);
+pointer-events:none;
+opacity:0.12;
+}
+
+.symbol{
+width:380px;
+animation:spin 80s linear infinite;
+}
+
+@keyframes spin{
+0%{transform:rotateY(0deg)}
+100%{transform:rotateY(360deg)}
+}
+
+/* PARTICLES */
+
+.particle{
+position:absolute;
+width:3px;
+height:3px;
+background:#00ffff;
+border-radius:50%;
+opacity:.5;
+animation:particleFloat linear infinite;
+}
+
+@keyframes particleFloat{
+0%{transform:translateY(0)}
+100%{transform:translateY(-400px)}
+}
+
+/* HEADER */
+
+.header{
+padding:15px;
+border-bottom:1px solid rgba(255,255,255,0.05);
+}
+
+/* CHAT */
+
+.messages{
+flex:1;
+overflow-y:auto;
+padding:20px;
+}
+
+.message{
+display:flex;
+gap:10px;
+margin:10px 0;
+}
+
+.user{
+justify-content:flex-end;
+}
+
+.bot{
+justify-content:flex-start;
+}
+
+.avatar{
+width:32px;
+height:32px;
+border-radius:50%;
+}
+
+.bubble{
+max-width:65%;
+padding:12px;
+border-radius:14px;
+font-size:14px;
+}
+
+.user .bubble{
+background:rgba(0,0,0,0.25);
+border:1px solid #22c55e;
+}
+
+.bot .bubble{
+background:#111827;
+}
+
+/* INPUT */
+
+.input-area{
+display:flex;
+gap:10px;
+padding:15px;
+border-top:1px solid rgba(255,255,255,0.05);
+}
+
+input{
+flex:1;
+padding:12px;
+border-radius:8px;
+border:none;
+background:#1e293b;
+color:white;
+}
+
+button{
+padding:12px 20px;
+border:none;
+border-radius:8px;
+background:#ef4444;
+color:white;
+cursor:pointer;
+}
+
+/* THINKING */
+
+.thinking{
+display:flex;
+gap:6px;
+}
+
+.dot{
+width:6px;
+height:6px;
+background:#ef4444;
+border-radius:50%;
+animation:bounce 1.2s infinite;
+}
+
+.dot:nth-child(2){animation-delay:.2s}
+.dot:nth-child(3){animation-delay:.4s}
+
+@keyframes bounce{
+0%,80%,100%{transform:scale(0)}
+40%{transform:scale(1)}
+}
+
+</style>
+
+</head>
+
+<body>
+
+<div class="sidebar">
+
+<div class="newchat" onclick="newChat()">+ New Chat</div>
+
+<div id="history" class="history"></div>
+
+</div>
+
+<div class="main">
+
+<div class="symbol-container">
+<img src="./ritual-symbol.png" class="symbol">
+</div>
+
+<div class="header">
+🐱 Siggy · Mystical Oracle Cat
+</div>
+
+<div id="messages" class="messages"></div>
+
+<div class="input-area">
+
+<input id="msg" placeholder="Ask Siggy something...">
+<button onclick="sendMessage()">Send</button>
+
+</div>
+
+</div>
+
+<div id="menu" class="context-menu"></div>
+
 <script>
-<!-- code by diancvk -->
-document.write(unescape('%3C%21DOCTYPE%20html%3E%0A%3Chtml%20lang%3D%22en%22%3E%0A%3Chead%3E%0A%0A%3Cmeta%20charset%3D%22UTF-8%22%3E%0A%3Cmeta%20name%3D%22viewport%22%20content%3D%22width%3Ddevice-width%2C%20initial-scale%3D1.0%22%3E%0A%0A%3Ctitle%3ESiggy%20Dormitory%3C/title%3E%0A%3Clink%20rel%3D%22icon%22%20type%3D%22image/png%22%20href%3D%22./ritual-symbol.png%22%3E%0A%3Cscript%20src%3D%22https%3A//cdn.jsdelivr.net/npm/marked/marked.min.js%22%3E%3C/script%3E%0A%0A%3Cstyle%3E%0A%0A/*%20BASE%20*/%0A%0Abody%7B%0Amargin%3A0%3B%0Afont-family%3Asystem-ui%3B%0Abackground%3A%23020617%3B%0Acolor%3Awhite%3B%0Aheight%3A100vh%3B%0Adisplay%3Aflex%3B%0Aoverflow%3Ahidden%3B%0A%7D%0A%0A/*%20GRID%20BACKGROUND%20*/%0A%0Abody%3A%3Abefore%7B%0A%0Acontent%3A%22%22%3B%0Aposition%3Afixed%3B%0Atop%3A0%3B%0Aleft%3A0%3B%0Awidth%3A100%25%3B%0Aheight%3A100%25%3B%0A%0Abackground-image%3A%0Alinear-gradient%28rgba%280%2C255%2C255%2C0.03%29%201px%2C%20transparent%201px%29%2C%0Alinear-gradient%2890deg%2C%20rgba%280%2C255%2C255%2C0.03%29%201px%2C%20transparent%201px%29%3B%0A%0Abackground-size%3A60px%2060px%3B%0A%0Aanimation%3AgridMove%2020s%20linear%20infinite%3B%0A%0Az-index%3A-5%3B%0A%0A%7D%0A%0A@keyframes%20gridMove%7B%0A0%25%7Bbackground-position%3A0%200%7D%0A100%25%7Bbackground-position%3A60px%2060px%7D%0A%7D%0A%0A/*%20SIDEBAR%20*/%0A%0A.sidebar%7B%0Awidth%3A260px%3B%0Abackground%3A%23020617%3B%0Aborder-right%3A1px%20solid%20rgba%28255%2C255%2C255%2C0.05%29%3B%0Apadding%3A15px%3B%0Adisplay%3Aflex%3B%0Aflex-direction%3Acolumn%3B%0Az-index%3A5%3B%0A%7D%0A%0A.newchat%7B%0Abackground%3A%23111827%3B%0Apadding%3A10px%3B%0Aborder-radius%3A8px%3B%0Acursor%3Apointer%3B%0Amargin-bottom%3A10px%3B%0Atext-align%3Acenter%3B%0A%7D%0A%0A.history%7B%0Aflex%3A1%3B%0Aoverflow-y%3Aauto%3B%0A%7D%0A%0A.history-item%7B%0Adisplay%3Aflex%3B%0Ajustify-content%3Aspace-between%3B%0Aalign-items%3Acenter%3B%0Apadding%3A10px%3B%0Aborder-radius%3A8px%3B%0Acursor%3Apointer%3B%0A%7D%0A%0A.history-item%3Ahover%7B%0Abackground%3A%23111827%3B%0A%7D%0A%0A.menu-btn%7B%0Acursor%3Apointer%3B%0A%7D%0A%0A/*%20CONTEXT%20MENU%20*/%0A%0A.context-menu%7B%0Aposition%3Afixed%3B%0Abackground%3A%23111827%3B%0Aborder-radius%3A8px%3B%0Adisplay%3Anone%3B%0Aflex-direction%3Acolumn%3B%0Amin-width%3A150px%3B%0Az-index%3A100%3B%0A%7D%0A%0A.context-menu%20div%7B%0Apadding%3A10px%3B%0Acursor%3Apointer%3B%0A%7D%0A%0A.context-menu%20div%3Ahover%7B%0Abackground%3A%231f2937%3B%0A%7D%0A%0A/*%20MAIN%20*/%0A%0A.main%7B%0Aflex%3A1%3B%0Adisplay%3Aflex%3B%0Aflex-direction%3Acolumn%3B%0Aposition%3Arelative%3B%0A%7D%0A%0A/*%20RITUAL%20SYMBOL%20*/%0A%0A.symbol-container%7B%0Aposition%3Aabsolute%3B%0Atop%3A50%25%3B%0Aleft%3A50%25%3B%0Atransform%3Atranslate%28-50%25%2C-50%25%29%3B%0Apointer-events%3Anone%3B%0Aopacity%3A0.12%3B%0A%7D%0A%0A.symbol%7B%0Awidth%3A380px%3B%0Aanimation%3Aspin%2080s%20linear%20infinite%3B%0A%7D%0A%0A@keyframes%20spin%7B%0A0%25%7Btransform%3ArotateY%280deg%29%7D%0A100%25%7Btransform%3ArotateY%28360deg%29%7D%0A%7D%0A%0A/*%20PARTICLES%20*/%0A%0A.particle%7B%0Aposition%3Aabsolute%3B%0Awidth%3A3px%3B%0Aheight%3A3px%3B%0Abackground%3A%2300ffff%3B%0Aborder-radius%3A50%25%3B%0Aopacity%3A.5%3B%0Aanimation%3AparticleFloat%20linear%20infinite%3B%0A%7D%0A%0A@keyframes%20particleFloat%7B%0A0%25%7Btransform%3AtranslateY%280%29%7D%0A100%25%7Btransform%3AtranslateY%28-400px%29%7D%0A%7D%0A%0A/*%20HEADER%20*/%0A%0A.header%7B%0Apadding%3A15px%3B%0Aborder-bottom%3A1px%20solid%20rgba%28255%2C255%2C255%2C0.05%29%3B%0A%7D%0A%0A/*%20CHAT%20*/%0A%0A.messages%7B%0Aflex%3A1%3B%0Aoverflow-y%3Aauto%3B%0Apadding%3A20px%3B%0A%7D%0A%0A.message%7B%0Adisplay%3Aflex%3B%0Agap%3A10px%3B%0Amargin%3A10px%200%3B%0A%7D%0A%0A.user%7B%0Ajustify-content%3Aflex-end%3B%0A%7D%0A%0A.bot%7B%0Ajustify-content%3Aflex-start%3B%0A%7D%0A%0A.avatar%7B%0Awidth%3A32px%3B%0Aheight%3A32px%3B%0Aborder-radius%3A50%25%3B%0A%7D%0A%0A.bubble%7B%0Amax-width%3A65%25%3B%0Apadding%3A12px%3B%0Aborder-radius%3A14px%3B%0Afont-size%3A14px%3B%0A%7D%0A%0A.user%20.bubble%7B%0Abackground%3Argba%280%2C0%2C0%2C0.25%29%3B%0Aborder%3A1px%20solid%20%2322c55e%3B%0A%7D%0A%0A.bot%20.bubble%7B%0Abackground%3A%23111827%3B%0A%7D%0A%0A/*%20INPUT%20*/%0A%0A.input-area%7B%0Adisplay%3Aflex%3B%0Agap%3A10px%3B%0Apadding%3A15px%3B%0Aborder-top%3A1px%20solid%20rgba%28255%2C255%2C255%2C0.05%29%3B%0A%7D%0A%0Ainput%7B%0Aflex%3A1%3B%0Apadding%3A12px%3B%0Aborder-radius%3A8px%3B%0Aborder%3Anone%3B%0Abackground%3A%231e293b%3B%0Acolor%3Awhite%3B%0A%7D%0A%0Abutton%7B%0Apadding%3A12px%2020px%3B%0Aborder%3Anone%3B%0Aborder-radius%3A8px%3B%0Abackground%3A%23ef4444%3B%0Acolor%3Awhite%3B%0Acursor%3Apointer%3B%0A%7D%0A%0A/*%20THINKING%20*/%0A%0A.thinking%7B%0Adisplay%3Aflex%3B%0Agap%3A6px%3B%0A%7D%0A%0A.dot%7B%0Awidth%3A6px%3B%0Aheight%3A6px%3B%0Abackground%3A%23ef4444%3B%0Aborder-radius%3A50%25%3B%0Aanimation%3Abounce%201.2s%20infinite%3B%0A%7D%0A%0A.dot%3Anth-child%282%29%7Banimation-delay%3A.2s%7D%0A.dot%3Anth-child%283%29%7Banimation-delay%3A.4s%7D%0A%0A@keyframes%20bounce%7B%0A0%25%2C80%25%2C100%25%7Btransform%3Ascale%280%29%7D%0A40%25%7Btransform%3Ascale%281%29%7D%0A%7D%0A%0A%3C/style%3E%0A%0A%3C/head%3E%0A%0A%3Cbody%3E%0A%0A%3Cdiv%20class%3D%22sidebar%22%3E%0A%0A%3Cdiv%20class%3D%22newchat%22%20onclick%3D%22newChat%28%29%22%3E+%20New%20Chat%3C/div%3E%0A%0A%3Cdiv%20id%3D%22history%22%20class%3D%22history%22%3E%3C/div%3E%0A%0A%3C/div%3E%0A%0A%3Cdiv%20class%3D%22main%22%3E%0A%0A%3Cdiv%20class%3D%22symbol-container%22%3E%0A%3Cimg%20src%3D%22./ritual-symbol.png%22%20class%3D%22symbol%22%3E%0A%3C/div%3E%0A%0A%3Cdiv%20class%3D%22header%22%3E%0A%uD83D%uDC31%20Siggy%20%B7%20Mystical%20Oracle%20Cat%0A%3C/div%3E%0A%0A%3Cdiv%20id%3D%22messages%22%20class%3D%22messages%22%3E%3C/div%3E%0A%0A%3Cdiv%20class%3D%22input-area%22%3E%0A%0A%3Cinput%20id%3D%22msg%22%20placeholder%3D%22Ask%20Siggy%20something...%22%3E%0A%3Cbutton%20onclick%3D%22sendMessage%28%29%22%3ESend%3C/button%3E%0A%0A%3C/div%3E%0A%0A%3C/div%3E%0A%0A%3Cdiv%20id%3D%22menu%22%20class%3D%22context-menu%22%3E%3C/div%3E%0A%0A%3Cscript%3E%0A%0A/*%20RANDOM%20GREETINGS%20*/%0A%0Aconst%20greetings%3D%5B%0A%0A%22yo%20traveler%20%uD83D%uDC4B%20I%27m%20Siggy%20%u2014%20mystical%20oracle%20cat%20of%20Ritual.%22%2C%0A%22psst...%20hey%20explorer%20%uD83D%uDC3E%20Siggy%20here.%22%2C%0A%22welcome%20wanderer%20%u2728%20Ritual%20world%20is%20wide.%22%2C%0A%22hey%20there%20stranger%20%uD83D%uDE3C%20ready%20for%20some%20arcane%20knowledge%3F%22%2C%0A%22ah%20another%20curious%20soul%20%uD83D%uDD2E%20what%20do%20you%20seek%3F%22%2C%0A%22well%20well...%20someone%20opened%20the%20portal%20again.%22%2C%0A%22hi%20human%20%uD83D%uDC4B%20Siggy%20online.%20what%27s%20the%20vibe%20today%3F%22%2C%0A%22yo%20%uD83D%uDC40%20Siggy%20here%20%u2014%20guide%20through%20the%20Ritual%20universe.%22%2C%0A%22heya%20%u2728%20what%27s%20cooking%20in%20your%20brain%20today%3F%22%2C%0A%22sup%20traveler%20%uD83D%uDC31%20ready%20to%20explore%20Ritual%3F%22%0A%0A%5D%0A%0Afunction%20randomGreeting%28%29%7B%0Areturn%20greetings%5BMath.floor%28Math.random%28%29*greetings.length%29%5D%0A%7D%0A%0A/*%20STORAGE%20*/%0A%0Alet%20sessions%3DJSON.parse%28localStorage.getItem%28%22siggy_sessions%22%29%29%7C%7C%5B%5D%0Alet%20currentSession%3Dnull%0A%0Aconst%20messages%3Ddocument.getElementById%28%22messages%22%29%0Aconst%20historyDiv%3Ddocument.getElementById%28%22history%22%29%0A%0Afunction%20save%28%29%7B%0AlocalStorage.setItem%28%22siggy_sessions%22%2CJSON.stringify%28sessions%29%29%0A%7D%0A%0A/*%20SIDEBAR%20*/%0A%0Afunction%20renderSidebar%28%29%7B%0A%0AhistoryDiv.innerHTML%3D%22%22%0A%0Asessions%0A.filter%28c%3D%3E%21c.archived%29%0A.sort%28%28a%2Cb%29%3D%3Eb.pinned-a.pinned%29%0A%0A.forEach%28chat%3D%3E%7B%0A%0Alet%20div%3Ddocument.createElement%28%22div%22%29%0Adiv.className%3D%22history-item%22%0A%0Adiv.innerHTML%3D%60%0A%3Cspan%20class%3D%22chat-title%22%3E%24%7Bchat.pinned%3F%22%uD83D%uDCCC%20%22%3A%22%22%7D%24%7Bchat.title%7D%3C/span%3E%0A%3Cspan%20class%3D%22menu-btn%22%3E%u22EF%3C/span%3E%0A%60%0A%0Adiv.querySelector%28%22.chat-title%22%29.onclick%3D%28%29%3D%3EloadSession%28chat.id%29%0A%0Adiv.querySelector%28%22.menu-btn%22%29.onclick%3D%28e%29%3D%3E%7B%0Ae.stopPropagation%28%29%0AopenMenu%28e%2Cchat.id%29%0A%7D%0A%0AhistoryDiv.appendChild%28div%29%0A%0A%7D%29%0A%0A%7D%0A%0A/*%20MENU%20*/%0A%0Afunction%20openMenu%28e%2Cid%29%7B%0A%0Aconst%20menu%3Ddocument.getElementById%28%22menu%22%29%0A%0Amenu.style.display%3D%22flex%22%0Amenu.style.left%3De.pageX+%22px%22%0Amenu.style.top%3De.pageY+%22px%22%0A%0Amenu.innerHTML%3D%60%0A%3Cdiv%20onclick%3D%22renameChat%28%27%24%7Bid%7D%27%29%22%3ERename%3C/div%3E%0A%3Cdiv%20onclick%3D%22pinChat%28%27%24%7Bid%7D%27%29%22%3EPin%3C/div%3E%0A%3Cdiv%20onclick%3D%22archiveChat%28%27%24%7Bid%7D%27%29%22%3EArchive%3C/div%3E%0A%3Cdiv%20onclick%3D%22deleteChat%28%27%24%7Bid%7D%27%29%22%3EDelete%3C/div%3E%0A%60%0A%0A%7D%0A%0Afunction%20renameChat%28id%29%7B%0A%0Alet%20name%3Dprompt%28%22Rename%20chat%22%29%0Aif%28%21name%29return%0A%0Asessions.find%28c%3D%3Ec.id%3D%3D%3Did%29.title%3Dname%0Asave%28%29%0ArenderSidebar%28%29%0A%0A%7D%0A%0Afunction%20pinChat%28id%29%7B%0A%0Alet%20chat%3Dsessions.find%28c%3D%3Ec.id%3D%3D%3Did%29%0Achat.pinned%3D%21chat.pinned%0A%0Asave%28%29%0ArenderSidebar%28%29%0A%0A%7D%0A%0Afunction%20archiveChat%28id%29%7B%0A%0Asessions.find%28c%3D%3Ec.id%3D%3D%3Did%29.archived%3Dtrue%0Asave%28%29%0ArenderSidebar%28%29%0A%0A%7D%0A%0Afunction%20deleteChat%28id%29%7B%0A%0Asessions%3Dsessions.filter%28c%3D%3Ec.id%21%3D%3Did%29%0Asave%28%29%0ArenderSidebar%28%29%0A%0A%7D%0A%0Adocument.body.onclick%3D%28%29%3D%3E%7B%0Adocument.getElementById%28%22menu%22%29.style.display%3D%22none%22%0A%7D%0A%0A/*%20NEW%20CHAT%20*/%0A%0Afunction%20newChat%28%29%7B%0A%0Aconst%20chat%3D%7B%0Aid%3A%22chat_%22+Date.now%28%29%2C%0Atitle%3A%22New%20Chat%22%2C%0Amessages%3A%5B%5D%2C%0Apinned%3Afalse%2C%0Aarchived%3Afalse%0A%7D%0A%0Asessions.push%28chat%29%0AcurrentSession%3Dchat.id%0A%0Asave%28%29%0ArenderSidebar%28%29%0A%0Amessages.innerHTML%3D%22%22%0A%0AaddMessage%28randomGreeting%28%29%2C%22bot%22%29%0A%0A%7D%0A%0A/*%20LOAD%20CHAT%20*/%0A%0Afunction%20loadSession%28id%29%7B%0A%0AcurrentSession%3Did%0Amessages.innerHTML%3D%22%22%0A%0Alet%20chat%3Dsessions.find%28c%3D%3Ec.id%3D%3D%3Did%29%0A%0Achat.messages.forEach%28m%3D%3E%7B%0AaddMessage%28m.text%2Cm.type%2Cfalse%29%0A%7D%29%0A%0A%7D%0A%0A/*%20MESSAGE%20*/%0A%0Afunction%20addMessage%28text%2Ctype%2CsaveMsg%3Dtrue%29%7B%0A%0Alet%20div%3Ddocument.createElement%28%22div%22%29%0Adiv.className%3D%60message%20%24%7Btype%7D%60%0A%0Adiv.innerHTML%3Dtype%3D%3D%3D%22user%22%0A%3F%20%60%3Cdiv%20class%3D%22bubble%22%3E%24%7Btext%7D%3C/div%3E%0A%3Cimg%20src%3D%22./user-avatar.png%22%20class%3D%22avatar%22%3E%60%0A%3A%20%60%3Cimg%20src%3D%22./ai-avatar.png%22%20class%3D%22avatar%22%3E%0A%3Cdiv%20class%3D%22bubble%22%3E%24%7Bmarked.parse%28text%29%7D%3C/div%3E%60%0A%0Amessages.appendChild%28div%29%0Amessages.scrollTop%3Dmessages.scrollHeight%0A%0Aif%28saveMsg%29%7B%0A%0Alet%20chat%3Dsessions.find%28c%3D%3Ec.id%3D%3D%3DcurrentSession%29%0A%0Achat.messages.push%28%7Btext%2Ctype%7D%29%0A%0Aif%28chat.messages.length%3D%3D%3D1%29%7B%0Achat.title%3Dtext.substring%280%2C30%29%0A%7D%0A%0Asave%28%29%0A%0A%7D%0A%0A%7D%0A%0A/*%20STREAMING%20RESPONSE%20*/%0A%0Afunction%20streamText%28text%29%7B%0A%0Alet%20bubble%3Ddocument.createElement%28%22div%22%29%0Abubble.className%3D%22bubble%22%0A%0Alet%20container%3Ddocument.createElement%28%22div%22%29%0Acontainer.className%3D%22message%20bot%22%0A%0Acontainer.innerHTML%3D%60%3Cimg%20src%3D%22./ai-avatar.png%22%20class%3D%22avatar%22%3E%60%0Acontainer.appendChild%28bubble%29%0A%0Amessages.appendChild%28container%29%0A%0Alet%20i%3D0%0A%0Alet%20interval%3DsetInterval%28%28%29%3D%3E%7B%0A%0Abubble.innerHTML%3Dmarked.parse%28text.substring%280%2Ci%29%29%0A%0Amessages.scrollTop%3Dmessages.scrollHeight%0A%0Ai++%0A%0Aif%28i%3Etext.length%29%7B%0AclearInterval%28interval%29%0A%7D%0A%0A%7D%2C15%29%0A%0A%7D%0A%0A/*%20SEND%20MESSAGE%20*/%0A%0Aasync%20function%20sendMessage%28%29%7B%0A%0Alet%20input%3Ddocument.getElementById%28%22msg%22%29%0Alet%20text%3Dinput.value.trim%28%29%0A%0Aif%28%21text%29return%0A%0AaddMessage%28text%2C%22user%22%29%0A%0Ainput.value%3D%22%22%0A%0Alet%20think%3DshowThinking%28%29%0A%0Atry%7B%0A%0Alet%20res%3Dawait%20fetch%28%22/api/chat%22%2C%7B%0Amethod%3A%22POST%22%2C%0Aheaders%3A%7B%22Content-Type%22%3A%22application/json%22%7D%2C%0Abody%3AJSON.stringify%28%7Bmessage%3Atext%7D%29%0A%7D%29%0A%0Alet%20data%3Dawait%20res.json%28%29%0A%0Athink.remove%28%29%0A%0AstreamText%28data.response%20%7C%7C%20%22Siggy%20is%20thinking...%22%29%0A%0A%7Dcatch%7B%0A%0Athink.remove%28%29%0AaddMessage%28%22%u26A0%20Siggy%20cannot%20reach%20the%20oracle%20server.%22%2C%22bot%22%29%0A%0A%7D%0A%0A%7D%0A%0Adocument.getElementById%28%22msg%22%29.addEventListener%28%22keydown%22%2C%28e%29%3D%3E%7B%0A%0Aif%28e.key%3D%3D%3D%22Enter%22%29%7B%0Ae.preventDefault%28%29%0AsendMessage%28%29%0A%7D%0A%0A%7D%29%0A%0A/*%20THINKING%20*/%0A%0Afunction%20showThinking%28%29%7B%0A%0Alet%20div%3Ddocument.createElement%28%22div%22%29%0A%0Adiv.className%3D%22message%20bot%22%0A%0Adiv.innerHTML%3D%60%0A%3Cimg%20src%3D%22./ai-avatar.png%22%20class%3D%22avatar%22%3E%0A%3Cdiv%20class%3D%22bubble%22%3E%0A%3Cdiv%20class%3D%22thinking%22%3E%0A%3Cdiv%20class%3D%22dot%22%3E%3C/div%3E%0A%3Cdiv%20class%3D%22dot%22%3E%3C/div%3E%0A%3Cdiv%20class%3D%22dot%22%3E%3C/div%3E%0A%3C/div%3E%0A%3C/div%3E%0A%60%0A%0Amessages.appendChild%28div%29%0A%0Areturn%20div%0A%0A%7D%0A%0A/*%20INIT%20*/%0A%0Adocument.addEventListener%28%22DOMContentLoaded%22%2C%28%29%3D%3E%7B%0A%0ArenderSidebar%28%29%0A%0Aif%28sessions.length%3D%3D%3D0%29%7B%0AnewChat%28%29%0A%7Delse%7B%0AloadSession%28sessions%5Bsessions.length-1%5D.id%29%0A%7D%0A%0A%7D%29%0A%0A%3C/script%3E%0A%0A%3C/body%3E%0A%3C/html%3E'));
+
+/* RANDOM GREETINGS */
+
+const greetings=[
+
+"yo traveler 👋 I'm Siggy — mystical oracle cat of Ritual.",
+"psst... hey explorer 🐾 Siggy here.",
+"welcome wanderer ✨ Ritual world is wide.",
+"hey there stranger 😼 ready for some arcane knowledge?",
+"ah another curious soul 🔮 what do you seek?",
+"well well... someone opened the portal again.",
+"hi human 👋 Siggy online. what's the vibe today?",
+"yo 👀 Siggy here — guide through the Ritual universe.",
+"heya ✨ what's cooking in your brain today?",
+"sup traveler 🐱 ready to explore Ritual?"
+
+]
+
+function randomGreeting(){
+return greetings[Math.floor(Math.random()*greetings.length)]
+}
+
+/* STORAGE */
+
+let sessions=JSON.parse(localStorage.getItem("siggy_sessions"))||[]
+let currentSession=null
+
+const messages=document.getElementById("messages")
+const historyDiv=document.getElementById("history")
+
+function save(){
+localStorage.setItem("siggy_sessions",JSON.stringify(sessions))
+}
+
+/* SIDEBAR */
+
+function renderSidebar(){
+
+historyDiv.innerHTML=""
+
+sessions
+.filter(c=>!c.archived)
+.sort((a,b)=>b.pinned-a.pinned)
+
+.forEach(chat=>{
+
+let div=document.createElement("div")
+div.className="history-item"
+
+div.innerHTML=`
+<span class="chat-title">${chat.pinned?"📌 ":""}${chat.title}</span>
+<span class="menu-btn">⋯</span>
+`
+
+div.querySelector(".chat-title").onclick=()=>loadSession(chat.id)
+
+div.querySelector(".menu-btn").onclick=(e)=>{
+e.stopPropagation()
+openMenu(e,chat.id)
+}
+
+historyDiv.appendChild(div)
+
+})
+
+}
+
+/* MENU */
+
+function openMenu(e,id){
+
+const menu=document.getElementById("menu")
+
+menu.style.display="flex"
+menu.style.left=e.pageX+"px"
+menu.style.top=e.pageY+"px"
+
+menu.innerHTML=`
+<div onclick="renameChat('${id}')">Rename</div>
+<div onclick="pinChat('${id}')">Pin</div>
+<div onclick="archiveChat('${id}')">Archive</div>
+<div onclick="deleteChat('${id}')">Delete</div>
+`
+
+}
+
+function renameChat(id){
+
+let name=prompt("Rename chat")
+if(!name)return
+
+sessions.find(c=>c.id===id).title=name
+save()
+renderSidebar()
+
+}
+
+function pinChat(id){
+
+let chat=sessions.find(c=>c.id===id)
+chat.pinned=!chat.pinned
+
+save()
+renderSidebar()
+
+}
+
+function archiveChat(id){
+
+sessions.find(c=>c.id===id).archived=true
+save()
+renderSidebar()
+
+}
+
+function deleteChat(id){
+
+sessions=sessions.filter(c=>c.id!==id)
+save()
+renderSidebar()
+
+}
+
+document.body.onclick=()=>{
+document.getElementById("menu").style.display="none"
+}
+
+/* NEW CHAT */
+
+function newChat(){
+
+const chat={
+id:"chat_"+Date.now(),
+title:"New Chat",
+messages:[],
+pinned:false,
+archived:false
+}
+
+sessions.push(chat)
+currentSession=chat.id
+
+save()
+renderSidebar()
+
+messages.innerHTML=""
+
+addMessage(randomGreeting(),"bot")
+
+}
+
+/* LOAD CHAT */
+
+function loadSession(id){
+
+currentSession=id
+messages.innerHTML=""
+
+let chat=sessions.find(c=>c.id===id)
+
+chat.messages.forEach(m=>{
+addMessage(m.text,m.type,false)
+})
+
+}
+
+/* MESSAGE */
+
+function addMessage(text,type,saveMsg=true){
+
+let div=document.createElement("div")
+div.className=`message ${type}`
+
+div.innerHTML=type==="user"
+? `<div class="bubble">${text}</div>
+<img src="./user-avatar.png" class="avatar">`
+: `<img src="./ai-avatar.png" class="avatar">
+<div class="bubble">${marked.parse(text)}</div>`
+
+messages.appendChild(div)
+messages.scrollTop=messages.scrollHeight
+
+if(saveMsg){
+
+let chat=sessions.find(c=>c.id===currentSession)
+
+chat.messages.push({text,type})
+
+if(chat.messages.length===1){
+chat.title=text.substring(0,30)
+}
+
+save()
+
+}
+
+}
+
+/* STREAMING RESPONSE */
+
+function streamText(text){
+
+let bubble=document.createElement("div")
+bubble.className="bubble"
+
+let container=document.createElement("div")
+container.className="message bot"
+
+container.innerHTML=`<img src="./ai-avatar.png" class="avatar">`
+container.appendChild(bubble)
+
+messages.appendChild(container)
+
+let i=0
+
+let interval=setInterval(()=>{
+
+bubble.innerHTML=marked.parse(text.substring(0,i))
+
+messages.scrollTop=messages.scrollHeight
+
+i++
+
+if(i>text.length){
+clearInterval(interval)
+}
+
+},15)
+
+}
+
+/* SEND MESSAGE */
+
+async function sendMessage(){
+
+let input=document.getElementById("msg")
+let text=input.value.trim()
+
+if(!text)return
+
+addMessage(text,"user")
+
+input.value=""
+
+let think=showThinking()
+
+try{
+
+let res=await fetch("/api/chat",{
+method:"POST",
+headers:{"Content-Type":"application/json"},
+body:JSON.stringify({message:text})
+})
+
+let data=await res.json()
+
+think.remove()
+
+streamText(data.response || "Siggy is thinking...")
+
+}catch{
+
+think.remove()
+addMessage("⚠ Siggy cannot reach the oracle server.","bot")
+
+}
+
+}
+
+document.getElementById("msg").addEventListener("keydown",(e)=>{
+
+if(e.key==="Enter"){
+e.preventDefault()
+sendMessage()
+}
+
+})
+
+/* THINKING */
+
+function showThinking(){
+
+let div=document.createElement("div")
+
+div.className="message bot"
+
+div.innerHTML=`
+<img src="./ai-avatar.png" class="avatar">
+<div class="bubble">
+<div class="thinking">
+<div class="dot"></div>
+<div class="dot"></div>
+<div class="dot"></div>
+</div>
+</div>
+`
+
+messages.appendChild(div)
+
+return div
+
+}
+
+/* INIT */
+
+document.addEventListener("DOMContentLoaded",()=>{
+
+renderSidebar()
+
+if(sessions.length===0){
+newChat()
+}else{
+loadSession(sessions[sessions.length-1].id)
+}
+
+})
+
 </script>
+
+</body>
+</html>
