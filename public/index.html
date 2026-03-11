@@ -3,15 +3,13 @@
 <head>
 
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width,initial-scale=1">
 
 <title>Siggy Dormitory</title>
 <link rel="icon" type="image/png" href="./ritual-symbol.png">
 <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
 
 <style>
-
-/* ===== BASE ===== */
 
 body{
 margin:0;
@@ -23,9 +21,11 @@ display:flex;
 overflow:hidden;
 }
 
-/* ===== AI CIRCUIT BACKGROUND ===== */
+/* circuit background */
 
-.circuit{
+body::before{
+
+content:"";
 
 position:fixed;
 top:0;
@@ -50,9 +50,11 @@ z-index:-3;
 100%{background-position:60px 60px}
 }
 
-/* ===== SYMBOL PARALLAX ===== */
+/* ritual symbol */
 
-.symbol{
+body::after{
+
+content:"";
 
 position:fixed;
 top:-50%;
@@ -68,41 +70,16 @@ opacity:0.05;
 
 animation:symbolMove 80s linear infinite;
 
-pointer-events:none;
-
 z-index:-2;
 
 }
 
 @keyframes symbolMove{
-
 0%{transform:translate(0,0)}
 100%{transform:translate(-200px,-200px)}
-
 }
 
-/* ===== PARTICLES ===== */
-
-.particles span{
-
-position:fixed;
-width:3px;
-height:3px;
-background:#00ffff;
-border-radius:50%;
-opacity:.4;
-animation:particleFloat 12s linear infinite;
-pointer-events:none;
-z-index:-1;
-
-}
-
-@keyframes particleFloat{
-0%{transform:translateY(100vh)}
-100%{transform:translateY(-10vh)}
-}
-
-/* ===== SIDEBAR ===== */
+/* sidebar */
 
 .sidebar{
 
@@ -110,9 +87,10 @@ width:260px;
 background:#020617;
 border-right:1px solid rgba(255,255,255,0.05);
 
-padding:15px;
 display:flex;
 flex-direction:column;
+
+padding:15px;
 
 }
 
@@ -122,8 +100,8 @@ background:#111827;
 padding:10px;
 border-radius:8px;
 cursor:pointer;
-text-align:center;
 margin-bottom:10px;
+text-align:center;
 
 }
 
@@ -146,26 +124,52 @@ cursor:pointer;
 background:#111827;
 }
 
-/* ===== MAIN ===== */
+/* mobile drawer */
 
-.main{
+@media(max-width:900px){
 
-flex:1;
-display:flex;
-flex-direction:column;
+.sidebar{
+
+position:fixed;
+left:-260px;
+top:0;
+height:100%;
+transition:.3s;
 
 }
 
-/* ===== HEADER ===== */
+.sidebar.open{
+left:0;
+}
+
+}
+
+/* main */
+
+.main{
+flex:1;
+display:flex;
+flex-direction:column;
+}
+
+/* header */
 
 .header{
 
 padding:15px;
 border-bottom:1px solid rgba(255,255,255,0.05);
+display:flex;
+align-items:center;
+gap:10px;
 
 }
 
-/* ===== CHAT ===== */
+.menu-btn{
+cursor:pointer;
+font-size:20px;
+}
+
+/* chat */
 
 .messages{
 
@@ -216,7 +220,7 @@ background:#111827;
 
 }
 
-/* ===== INPUT ===== */
+/* input */
 
 .input-area{
 
@@ -249,7 +253,7 @@ cursor:pointer;
 
 }
 
-/* ===== THINKING ===== */
+/* thinking */
 
 .thinking{
 display:flex;
@@ -272,11 +276,28 @@ animation:bounce 1.2s infinite;
 40%{transform:scale(1)}
 }
 
-/* ===== MOBILE ===== */
+/* context menu */
 
-@media(max-width:900px){
+.context-menu{
 
-.sidebar{display:none}
+position:fixed;
+background:#111827;
+border-radius:8px;
+display:none;
+flex-direction:column;
+
+}
+
+.context-menu div{
+
+padding:8px 12px;
+cursor:pointer;
+
+}
+
+.context-menu div:hover{
+
+background:#1f2937;
 
 }
 
@@ -286,18 +307,7 @@ animation:bounce 1.2s infinite;
 
 <body>
 
-<div class="circuit"></div>
-<div class="symbol"></div>
-
-<div class="particles">
-<span style="left:10%"></span>
-<span style="left:30%"></span>
-<span style="left:50%"></span>
-<span style="left:70%"></span>
-<span style="left:90%"></span>
-</div>
-
-<div class="sidebar">
+<div id="sidebar" class="sidebar">
 
 <div class="newchat" onclick="newChat()">+ New Chat</div>
 
@@ -308,7 +318,11 @@ animation:bounce 1.2s infinite;
 <div class="main">
 
 <div class="header">
-🐱 Siggy · Mystical Oracle Cat
+
+<div class="menu-btn" onclick="toggleSidebar()">☰</div>
+
+<strong>🐱 Siggy · Mystical Oracle Cat</strong>
+
 </div>
 
 <div id="messages" class="messages"></div>
@@ -323,9 +337,11 @@ animation:bounce 1.2s infinite;
 
 </div>
 
+<div id="menu" class="context-menu"></div>
+
 <script>
 
-/* CHAT SYSTEM */
+/* storage */
 
 let sessions=JSON.parse(localStorage.getItem("siggy_sessions"))||[]
 
@@ -335,17 +351,61 @@ const messages=document.getElementById("messages")
 const historyDiv=document.getElementById("history")
 
 function save(){
-
 localStorage.setItem("siggy_sessions",JSON.stringify(sessions))
+}
+
+/* sidebar toggle */
+
+function toggleSidebar(){
+
+document.getElementById("sidebar").classList.toggle("open")
 
 }
+
+/* sidebar render */
+
+function renderSidebar(){
+
+historyDiv.innerHTML=""
+
+sessions
+.filter(c=>!c.archived)
+.sort((a,b)=>b.pinned-a.pinned)
+
+.forEach(chat=>{
+
+let div=document.createElement("div")
+
+div.className="history-item"
+
+div.innerText=(chat.pinned?"📌 ":"")+chat.title
+
+div.onclick=()=>loadSession(chat.id)
+
+div.oncontextmenu=(e)=>{
+
+e.preventDefault()
+
+showMenu(e,chat.id)
+
+}
+
+historyDiv.appendChild(div)
+
+})
+
+}
+
+/* new chat */
 
 function newChat(){
 
 const chat={
 id:"chat_"+Date.now(),
 title:"New Chat",
-messages:[]
+messages:[],
+pinned:false,
+archived:false
 }
 
 sessions.push(chat)
@@ -362,25 +422,7 @@ greeting()
 
 }
 
-function renderSidebar(){
-
-historyDiv.innerHTML=""
-
-sessions.forEach(chat=>{
-
-let div=document.createElement("div")
-
-div.className="history-item"
-
-div.innerText=chat.title
-
-div.onclick=()=>loadSession(chat.id)
-
-historyDiv.appendChild(div)
-
-})
-
-}
+/* load chat */
 
 function loadSession(id){
 
@@ -395,6 +437,8 @@ addMessage(m.text,m.type,false)
 })
 
 }
+
+/* add message */
 
 function addMessage(text,type,saveMsg=true){
 
@@ -430,10 +474,46 @@ save()
 
 }
 
+/* streaming response */
+
+function streamResponse(text){
+
+let div=document.createElement("div")
+
+div.className="message bot"
+
+div.innerHTML=`
+<img src="./ai-avatar.png" class="avatar">
+<div class="bubble"></div>
+`
+
+messages.appendChild(div)
+
+let bubble=div.querySelector(".bubble")
+
+let i=0
+
+let interval=setInterval(()=>{
+
+bubble.innerHTML=marked.parse(text.substring(0,i))
+
+i++
+
+if(i>text.length){
+clearInterval(interval)
+}
+
+messages.scrollTop=messages.scrollHeight
+
+},15)
+
+}
+
+/* send */
+
 async function sendMessage(){
 
 let input=document.getElementById("msg")
-
 let text=input.value.trim()
 
 if(!text)return
@@ -447,18 +527,16 @@ let think=showThinking()
 try{
 
 let res=await fetch("/api/chat",{
-
 method:"POST",
 headers:{"Content-Type":"application/json"},
 body:JSON.stringify({message:text})
-
 })
 
 let data=await res.json()
 
 think.remove()
 
-addMessage(data.response||"Siggy is thinking...","bot")
+streamResponse(data.response)
 
 }catch{
 
@@ -471,16 +549,13 @@ addMessage("⚠ Siggy cannot reach the oracle server.","bot")
 }
 
 document.getElementById("msg").addEventListener("keydown",(e)=>{
-
 if(e.key==="Enter"){
-
 e.preventDefault()
-
 sendMessage()
-
 }
-
 })
+
+/* thinking */
 
 function showThinking(){
 
@@ -505,6 +580,8 @@ return div
 
 }
 
+/* greeting */
+
 function greeting(){
 
 addMessage(`yo traveler 👋  
@@ -515,18 +592,92 @@ ask me anything.`,"bot")
 
 }
 
+/* context menu */
+
+function showMenu(e,id){
+
+let menu=document.getElementById("menu")
+
+menu.style.display="flex"
+
+menu.style.left=e.pageX+"px"
+menu.style.top=e.pageY+"px"
+
+menu.innerHTML=`
+
+<div onclick="renameChat('${id}')">Rename</div>
+<div onclick="pinChat('${id}')">Pin</div>
+<div onclick="archiveChat('${id}')">Archive</div>
+<div onclick="deleteChat('${id}')">Delete</div>
+
+`
+
+}
+
+/* menu actions */
+
+function renameChat(id){
+
+let name=prompt("New chat name")
+
+if(!name)return
+
+sessions.find(c=>c.id===id).title=name
+
+save()
+
+renderSidebar()
+
+}
+
+function pinChat(id){
+
+let chat=sessions.find(c=>c.id===id)
+
+chat.pinned=!chat.pinned
+
+save()
+
+renderSidebar()
+
+}
+
+function archiveChat(id){
+
+sessions.find(c=>c.id===id).archived=true
+
+save()
+
+renderSidebar()
+
+}
+
+function deleteChat(id){
+
+sessions=sessions.filter(c=>c.id!==id)
+
+save()
+
+renderSidebar()
+
+}
+
+/* close menu */
+
+document.body.onclick=()=>{
+document.getElementById("menu").style.display="none"
+}
+
+/* load */
+
 document.addEventListener("DOMContentLoaded",()=>{
 
 renderSidebar()
 
 if(sessions.length===0){
-
 newChat()
-
 }else{
-
 loadSession(sessions[sessions.length-1].id)
-
 }
 
 })
