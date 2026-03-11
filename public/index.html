@@ -3,7 +3,7 @@
 <head>
 
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 
 <title>Siggy Dormitory</title>
 <link rel="icon" type="image/png" href="./ritual-symbol.png">
@@ -21,7 +21,7 @@ display:flex;
 overflow:hidden;
 }
 
-/* circuit background */
+/* background grid */
 
 body::before{
 
@@ -41,42 +41,13 @@ background-size:60px 60px;
 
 animation:gridMove 20s linear infinite;
 
-z-index:-3;
+z-index:-2;
 
 }
 
 @keyframes gridMove{
 0%{background-position:0 0}
 100%{background-position:60px 60px}
-}
-
-/* ritual symbol */
-
-body::after{
-
-content:"";
-
-position:fixed;
-top:-50%;
-left:-50%;
-width:200%;
-height:200%;
-
-background-image:url("./ritual-symbol.png");
-background-size:120px;
-background-repeat:repeat;
-
-opacity:0.05;
-
-animation:symbolMove 80s linear infinite;
-
-z-index:-2;
-
-}
-
-@keyframes symbolMove{
-0%{transform:translate(0,0)}
-100%{transform:translate(-200px,-200px)}
 }
 
 /* sidebar */
@@ -87,10 +58,9 @@ width:260px;
 background:#020617;
 border-right:1px solid rgba(255,255,255,0.05);
 
+padding:15px;
 display:flex;
 flex-direction:column;
-
-padding:15px;
 
 }
 
@@ -114,8 +84,13 @@ overflow-y:auto;
 
 .history-item{
 
+display:flex;
+justify-content:space-between;
+align-items:center;
+
 padding:10px;
 border-radius:8px;
+
 cursor:pointer;
 
 }
@@ -124,23 +99,54 @@ cursor:pointer;
 background:#111827;
 }
 
-/* mobile drawer */
+.chat-title{
 
-@media(max-width:900px){
+flex:1;
+overflow:hidden;
+white-space:nowrap;
+text-overflow:ellipsis;
 
-.sidebar{
+}
+
+/* three dots */
+
+.menu-btn{
+
+padding:4px 8px;
+cursor:pointer;
+border-radius:6px;
+
+}
+
+.menu-btn:hover{
+
+background:#1f2937;
+
+}
+
+/* context menu */
+
+.context-menu{
 
 position:fixed;
-left:-260px;
-top:0;
-height:100%;
-transition:.3s;
+background:#111827;
+border-radius:8px;
+display:none;
+flex-direction:column;
+min-width:140px;
 
 }
 
-.sidebar.open{
-left:0;
+.context-menu div{
+
+padding:8px 12px;
+cursor:pointer;
+
 }
+
+.context-menu div:hover{
+
+background:#1f2937;
 
 }
 
@@ -158,18 +164,10 @@ flex-direction:column;
 
 padding:15px;
 border-bottom:1px solid rgba(255,255,255,0.05);
-display:flex;
-align-items:center;
-gap:10px;
 
 }
 
-.menu-btn{
-cursor:pointer;
-font-size:20px;
-}
-
-/* chat */
+/* messages */
 
 .messages{
 
@@ -276,29 +274,8 @@ animation:bounce 1.2s infinite;
 40%{transform:scale(1)}
 }
 
-/* context menu */
-
-.context-menu{
-
-position:fixed;
-background:#111827;
-border-radius:8px;
-display:none;
-flex-direction:column;
-
-}
-
-.context-menu div{
-
-padding:8px 12px;
-cursor:pointer;
-
-}
-
-.context-menu div:hover{
-
-background:#1f2937;
-
+@media(max-width:900px){
+.sidebar{display:none}
 }
 
 </style>
@@ -307,7 +284,7 @@ background:#1f2937;
 
 <body>
 
-<div id="sidebar" class="sidebar">
+<div class="sidebar">
 
 <div class="newchat" onclick="newChat()">+ New Chat</div>
 
@@ -318,11 +295,7 @@ background:#1f2937;
 <div class="main">
 
 <div class="header">
-
-<div class="menu-btn" onclick="toggleSidebar()">☰</div>
-
-<strong>🐱 Siggy · Mystical Oracle Cat</strong>
-
+🐱 Siggy · Mystical Oracle Cat
 </div>
 
 <div id="messages" class="messages"></div>
@@ -354,41 +327,24 @@ function save(){
 localStorage.setItem("siggy_sessions",JSON.stringify(sessions))
 }
 
-/* sidebar toggle */
-
-function toggleSidebar(){
-
-document.getElementById("sidebar").classList.toggle("open")
-
-}
-
 /* sidebar render */
 
 function renderSidebar(){
 
 historyDiv.innerHTML=""
 
-sessions
-.filter(c=>!c.archived)
-.sort((a,b)=>b.pinned-a.pinned)
-
-.forEach(chat=>{
+sessions.forEach(chat=>{
 
 let div=document.createElement("div")
 
 div.className="history-item"
 
-div.innerText=(chat.pinned?"📌 ":"")+chat.title
+div.innerHTML=`
+<div class="chat-title">${chat.title}</div>
+<div class="menu-btn" onclick="openMenu(event,'${chat.id}')">⋯</div>
+`
 
-div.onclick=()=>loadSession(chat.id)
-
-div.oncontextmenu=(e)=>{
-
-e.preventDefault()
-
-showMenu(e,chat.id)
-
-}
+div.querySelector(".chat-title").onclick=()=>loadSession(chat.id)
 
 historyDiv.appendChild(div)
 
@@ -403,9 +359,7 @@ function newChat(){
 const chat={
 id:"chat_"+Date.now(),
 title:"New Chat",
-messages:[],
-pinned:false,
-archived:false
+messages:[]
 }
 
 sessions.push(chat)
@@ -422,7 +376,7 @@ greeting()
 
 }
 
-/* load chat */
+/* load */
 
 function loadSession(id){
 
@@ -474,41 +428,6 @@ save()
 
 }
 
-/* streaming response */
-
-function streamResponse(text){
-
-let div=document.createElement("div")
-
-div.className="message bot"
-
-div.innerHTML=`
-<img src="./ai-avatar.png" class="avatar">
-<div class="bubble"></div>
-`
-
-messages.appendChild(div)
-
-let bubble=div.querySelector(".bubble")
-
-let i=0
-
-let interval=setInterval(()=>{
-
-bubble.innerHTML=marked.parse(text.substring(0,i))
-
-i++
-
-if(i>text.length){
-clearInterval(interval)
-}
-
-messages.scrollTop=messages.scrollHeight
-
-},15)
-
-}
-
 /* send */
 
 async function sendMessage(){
@@ -536,7 +455,7 @@ let data=await res.json()
 
 think.remove()
 
-streamResponse(data.response)
+addMessage(data.response||"Siggy is thinking...","bot")
 
 }catch{
 
@@ -594,7 +513,9 @@ ask me anything.`,"bot")
 
 /* context menu */
 
-function showMenu(e,id){
+function openMenu(e,id){
+
+e.stopPropagation()
 
 let menu=document.getElementById("menu")
 
@@ -614,11 +535,11 @@ menu.innerHTML=`
 
 }
 
-/* menu actions */
+/* actions */
 
 function renameChat(id){
 
-let name=prompt("New chat name")
+let name=prompt("Rename chat")
 
 if(!name)return
 
@@ -632,23 +553,13 @@ renderSidebar()
 
 function pinChat(id){
 
-let chat=sessions.find(c=>c.id===id)
-
-chat.pinned=!chat.pinned
-
-save()
-
-renderSidebar()
+alert("Pin feature coming next update")
 
 }
 
 function archiveChat(id){
 
-sessions.find(c=>c.id===id).archived=true
-
-save()
-
-renderSidebar()
+alert("Archive feature coming next update")
 
 }
 
