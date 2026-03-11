@@ -3,16 +3,15 @@
 <head>
 
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 
 <title>Siggy Dormitory</title>
-<link rel="icon" type="image/png" href="./ritual-symbol.png">
-  
+
 <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
 
 <style>
 
-/* ================= BASE ================= */
+/* ===== BASE ===== */
 
 body{
 margin:0;
@@ -24,11 +23,9 @@ display:flex;
 overflow:hidden;
 }
 
-/* ================= AI CIRCUIT BACKGROUND ================= */
+/* ===== AI CIRCUIT BACKGROUND ===== */
 
-body::before{
-
-content:"";
+.circuit{
 
 position:fixed;
 top:0;
@@ -53,11 +50,9 @@ z-index:-3;
 100%{background-position:60px 60px}
 }
 
-/* ================= RITUAL SYMBOL PARALLAX ================= */
+/* ===== SYMBOL PARALLAX ===== */
 
-body::after{
-
-content:"";
+.symbol{
 
 position:fixed;
 top:-50%;
@@ -73,6 +68,8 @@ opacity:0.05;
 
 animation:symbolMove 80s linear infinite;
 
+pointer-events:none;
+
 z-index:-2;
 
 }
@@ -84,26 +81,20 @@ z-index:-2;
 
 }
 
-/* ================= PARTICLES ================= */
-
-.particles{
-position:fixed;
-top:0;
-left:0;
-width:100%;
-height:100%;
-pointer-events:none;
-z-index:-1;
-}
+/* ===== PARTICLES ===== */
 
 .particles span{
-position:absolute;
+
+position:fixed;
 width:3px;
 height:3px;
 background:#00ffff;
 border-radius:50%;
 opacity:.4;
 animation:particleFloat 12s linear infinite;
+pointer-events:none;
+z-index:-1;
+
 }
 
 @keyframes particleFloat{
@@ -111,18 +102,17 @@ animation:particleFloat 12s linear infinite;
 100%{transform:translateY(-10vh)}
 }
 
-/* ================= SIDEBAR ================= */
+/* ===== SIDEBAR ===== */
 
 .sidebar{
 
-width:270px;
+width:260px;
 background:#020617;
 border-right:1px solid rgba(255,255,255,0.05);
 
+padding:15px;
 display:flex;
 flex-direction:column;
-
-padding:15px;
 
 }
 
@@ -131,20 +121,9 @@ padding:15px;
 background:#111827;
 padding:10px;
 border-radius:8px;
-text-align:center;
 cursor:pointer;
+text-align:center;
 margin-bottom:10px;
-
-}
-
-.search{
-
-padding:8px;
-margin-bottom:10px;
-background:#1e293b;
-border:none;
-border-radius:6px;
-color:white;
 
 }
 
@@ -160,8 +139,6 @@ overflow-y:auto;
 padding:10px;
 border-radius:8px;
 cursor:pointer;
-display:flex;
-justify-content:space-between;
 
 }
 
@@ -169,15 +146,17 @@ justify-content:space-between;
 background:#111827;
 }
 
-/* ================= MAIN ================= */
+/* ===== MAIN ===== */
 
 .main{
+
 flex:1;
 display:flex;
 flex-direction:column;
+
 }
 
-/* ================= HEADER ================= */
+/* ===== HEADER ===== */
 
 .header{
 
@@ -186,7 +165,7 @@ border-bottom:1px solid rgba(255,255,255,0.05);
 
 }
 
-/* ================= CHAT ================= */
+/* ===== CHAT ===== */
 
 .messages{
 
@@ -228,18 +207,16 @@ font-size:14px;
 
 background:rgba(0,0,0,0.25);
 border:1px solid #22c55e;
-box-shadow:0 0 10px rgba(34,197,94,0.4);
 
 }
 
 .bot .bubble{
 
 background:#111827;
-box-shadow:0 0 10px rgba(239,68,68,0.4);
 
 }
 
-/* ================= INPUT ================= */
+/* ===== INPUT ===== */
 
 .input-area{
 
@@ -272,7 +249,7 @@ cursor:pointer;
 
 }
 
-/* ================= THINKING ================= */
+/* ===== THINKING ===== */
 
 .thinking{
 display:flex;
@@ -295,10 +272,12 @@ animation:bounce 1.2s infinite;
 40%{transform:scale(1)}
 }
 
-/* ================= MOBILE ================= */
+/* ===== MOBILE ===== */
 
 @media(max-width:900px){
+
 .sidebar{display:none}
+
 }
 
 </style>
@@ -307,25 +286,20 @@ animation:bounce 1.2s infinite;
 
 <body>
 
+<div class="circuit"></div>
+<div class="symbol"></div>
+
 <div class="particles">
-
 <span style="left:10%"></span>
-<span style="left:20%"></span>
 <span style="left:30%"></span>
-<span style="left:40%"></span>
 <span style="left:50%"></span>
-<span style="left:60%"></span>
 <span style="left:70%"></span>
-<span style="left:80%"></span>
 <span style="left:90%"></span>
-
 </div>
 
 <div class="sidebar">
 
 <div class="newchat" onclick="newChat()">+ New Chat</div>
-
-<input class="search" placeholder="Search chat..." oninput="searchChat(this.value)">
 
 <div id="history" class="history"></div>
 
@@ -351,57 +325,27 @@ animation:bounce 1.2s infinite;
 
 <script>
 
-/* ================= STORAGE ================= */
+/* CHAT SYSTEM */
 
 let sessions=JSON.parse(localStorage.getItem("siggy_sessions"))||[]
+
 let currentSession=null
 
 const messages=document.getElementById("messages")
 const historyDiv=document.getElementById("history")
 
 function save(){
+
 localStorage.setItem("siggy_sessions",JSON.stringify(sessions))
-}
-
-/* ================= SIDEBAR ================= */
-
-function renderSidebar(){
-
-historyDiv.innerHTML=""
-
-sessions
-.filter(c=>!c.archived)
-.sort((a,b)=>b.pinned-a.pinned)
-
-.forEach(chat=>{
-
-let div=document.createElement("div")
-
-div.className="history-item"
-
-div.innerHTML=`
-<span>${chat.pinned?"📌 ":""}${chat.title}</span>
-<span onclick="menu(event,'${chat.id}')">⋯</span>
-`
-
-div.onclick=()=>loadSession(chat.id)
-
-historyDiv.appendChild(div)
-
-})
 
 }
-
-/* ================= NEW CHAT ================= */
 
 function newChat(){
 
 const chat={
 id:"chat_"+Date.now(),
 title:"New Chat",
-messages:[],
-pinned:false,
-archived:false
+messages:[]
 }
 
 sessions.push(chat)
@@ -418,7 +362,25 @@ greeting()
 
 }
 
-/* ================= LOAD SESSION ================= */
+function renderSidebar(){
+
+historyDiv.innerHTML=""
+
+sessions.forEach(chat=>{
+
+let div=document.createElement("div")
+
+div.className="history-item"
+
+div.innerText=chat.title
+
+div.onclick=()=>loadSession(chat.id)
+
+historyDiv.appendChild(div)
+
+})
+
+}
 
 function loadSession(id){
 
@@ -433,8 +395,6 @@ addMessage(m.text,m.type,false)
 })
 
 }
-
-/* ================= MESSAGE ================= */
 
 function addMessage(text,type,saveMsg=true){
 
@@ -461,9 +421,7 @@ let chat=sessions.find(c=>c.id===currentSession)
 chat.messages.push({text,type})
 
 if(chat.messages.length===1){
-
 chat.title=text.substring(0,30)
-
 }
 
 save()
@@ -472,11 +430,10 @@ save()
 
 }
 
-/* ================= STREAM RESPONSE ================= */
-
 async function sendMessage(){
 
 let input=document.getElementById("msg")
+
 let text=input.value.trim()
 
 if(!text)return
@@ -485,25 +442,27 @@ addMessage(text,"user")
 
 input.value=""
 
-let thinking=showThinking()
+let think=showThinking()
 
 try{
 
 let res=await fetch("/api/chat",{
+
 method:"POST",
 headers:{"Content-Type":"application/json"},
 body:JSON.stringify({message:text})
+
 })
 
 let data=await res.json()
 
-thinking.remove()
+think.remove()
 
-streamResponse(data.response)
+addMessage(data.response||"Siggy is thinking...","bot")
 
 }catch{
 
-thinking.remove()
+think.remove()
 
 addMessage("⚠ Siggy cannot reach the oracle server.","bot")
 
@@ -511,55 +470,17 @@ addMessage("⚠ Siggy cannot reach the oracle server.","bot")
 
 }
 
-/* ================= STREAM EFFECT ================= */
-
-function streamResponse(text){
-
-let div=document.createElement("div")
-
-div.className="message bot"
-
-div.innerHTML=`
-<img src="./ai-avatar.png" class="avatar">
-<div class="bubble"></div>
-`
-
-messages.appendChild(div)
-
-let bubble=div.querySelector(".bubble")
-
-let i=0
-
-let interval=setInterval(()=>{
-
-bubble.innerHTML=marked.parse(text.substring(0,i))
-
-i++
-
-if(i>text.length){
-
-clearInterval(interval)
-
-save()
-
-}
-
-messages.scrollTop=messages.scrollHeight
-
-},15)
-
-}
-
-/* ================= ENTER SEND ================= */
-
 document.getElementById("msg").addEventListener("keydown",(e)=>{
-if(e.key==="Enter"){
-e.preventDefault()
-sendMessage()
-}
-})
 
-/* ================= THINKING ================= */
+if(e.key==="Enter"){
+
+e.preventDefault()
+
+sendMessage()
+
+}
+
+})
 
 function showThinking(){
 
@@ -584,8 +505,6 @@ return div
 
 }
 
-/* ================= GREETING ================= */
-
 function greeting(){
 
 addMessage(`yo traveler 👋  
@@ -596,34 +515,18 @@ ask me anything.`,"bot")
 
 }
 
-/* ================= SEARCH ================= */
-
-function searchChat(q){
-
-renderSidebar()
-
-let items=[...document.querySelectorAll(".history-item")]
-
-items.forEach(i=>{
-
-if(!i.innerText.toLowerCase().includes(q.toLowerCase())){
-i.style.display="none"
-}
-
-})
-
-}
-
-/* ================= LOAD ================= */
-
 document.addEventListener("DOMContentLoaded",()=>{
 
 renderSidebar()
 
 if(sessions.length===0){
+
 newChat()
+
 }else{
+
 loadSession(sessions[sessions.length-1].id)
+
 }
 
 })
